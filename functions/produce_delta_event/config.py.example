@@ -1,0 +1,8 @@
+# Config for produce_delta_event
+TOPIC_PROJECT_ID = 'my-topic-id'
+TOPIC_NAME = 'my-topic-name'
+TOPIC_MAX_LATENCY = 0.25
+INBOX = 'my-inbox-bucket'
+ARCHIVE = 'my-archive-bucket'
+ERROR = 'my-error-bucket'
+FULL_LOAD = False
