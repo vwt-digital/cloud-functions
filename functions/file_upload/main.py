@@ -1,0 +1,108 @@
+import os
+import io
+import json
+import logging
+import config
+import base64
+import traceback
+import flask
+import pandas as pd
+
+from google.auth.transport import requests
+from google.oauth2 import id_token
+from google.cloud import storage
+from datetime import datetime as dt
+
+logging.basicConfig(level=logging.INFO)
+
+
+def send_bytestream_to_filestore(bytesIO, filename, bucket_name):
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    blob = storage.Blob(filename, bucket)
+    blob.upload_from_string(
+        bytesIO.getvalue(),
+        content_type=config.MEDIA_TYPE
+    )
+    logging.info('Write file {} to {}'.format(filename, bucket_name))
+
+
+def preprocessing(file):
+    logging.info('Preprocess start')
+    df = pd.read_excel(file, converters={i: str for i in range(len(config.COLUMNS_RENAME.keys()))})
+
+    # Check if contains the right columns
+    if set(list(df)) != set(config.COLUMNS_RENAME.keys()):
+        message = 'The uploaded file does not contain the correct columns. The following ones are missing: {}'.format(
+            ', '.join(list(set(config.COLUMNS_RENAME.keys()) - set(list(df)))))
+        logging.info(message)
+        return dict(
+            status='failure',
+            message=message
+        )
+
+    # Check if contains data
+    if len(df) == 0:
+        message = 'The uploaded file does not contain content'
+        logging.info(message)
+        return dict(
+            status='warning',
+            message=message
+        )
+
+    df = df.rename(columns=config.COLUMNS_RENAME)
+
+    # Add potency based on filename
+    if 'potentieel' in file.filename.lower():
+        df['potency_status'] = 'potentieel'
+    else:
+        df['potency_status'] = 'definitief'
+
+    # Only keep non-PII columns
+    df = df[config.COLUMNS_NONPII]
+
+    # Return Excel file as byte-stream
+    strIO = io.BytesIO()
+    excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
+    df.to_excel(excel_writer, sheet_name="data", index=False)
+    excel_writer.save()
+
+    return dict(
+        status='success',
+        message='excel-file succesfully processed',
+        file=strIO
+    )
+
+
+def file_upload(request):
+    try:
+        # Verify the media type: commented out for testing purposes
+        # if config.MEDIA_TYPE != request.headers.get('Content-Type', ''):
+        #     logging.info('Unsupported media type uploaded: {}'.format(
+        #         request.headers.get('Content-Type', 'No media-type provided')))
+        #     return 'Unsupported media type', 415
+        # else:
+        #     logging.info('Supported media type uploaded: {}'.format(request.headers.get('Content-Type')))
+
+        # Get file from request
+        file = request.files.get('file')
+        if not file:
+            return 'No file uploaded', 400
+        else:
+            logging.info('File uploaded: {}'.format(file.filename))
+
+        filename = '{}_{}_upload.xlsx'.format(
+            dt.now().strftime("%Y%m%d%H%M%S"),
+            config.TOPIC_NAME,
+        )
+        preprocessed = preprocessing(file)
+        if preprocessed['status'] == 'success':
+            send_bytestream_to_filestore(preprocessed['file'], filename, config.INBOX)
+            return 'OK', 200
+        else:
+            return preprocessed['status'] + ': ' + preprocessed['message'], 400
+
+    except Exception as e:
+        logging.info('Bad request')
+        logging.info(e)
+        return 'Bad request: {}\n'.format(e), 400

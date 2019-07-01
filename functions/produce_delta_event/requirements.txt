@@ -1,0 +1,6 @@
+google-cloud-storage == 1.16.1
+google-cloud-pubsub == 0.42.1
+pandas == 0.24.2
+xlrd == 1.2.0
+gcsfs == 0.2.2
+xlsxwriter == 1.1.8
