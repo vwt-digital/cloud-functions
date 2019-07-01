@@ -29,12 +29,12 @@ def send_bytestream_to_filestore(bytesIO, filename, bucket_name):
 
 def preprocessing(file):
     logging.info('Preprocess start')
-    df = pd.read_excel(file, converters={i: str for i in range(len(config.COLUMNS_RENAME.keys()))})
+    df = pd.read_excel(file, converters={i: str for i in range(len(config.COLUMN_MAPPING.keys()))})
 
     # Check if contains the right columns
-    if set(list(df)) != set(config.COLUMNS_RENAME.keys()):
+    if set(list(df)) != set(config.COLUMN_MAPPING.keys()):
         message = 'The uploaded file does not contain the correct columns. The following ones are missing: {}'.format(
-            ', '.join(list(set(config.COLUMNS_RENAME.keys()) - set(list(df)))))
+            ', '.join(list(set(config.COLUMN_MAPPING.keys()) - set(list(df)))))
         logging.info(message)
         return dict(
             status='failure',
@@ -50,7 +50,7 @@ def preprocessing(file):
             message=message
         )
 
-    df = df.rename(columns=config.COLUMNS_RENAME)
+    df = df.rename(columns=config.COLUMN_MAPPING)
 
     # Add potency based on filename
     if 'potentieel' in file.filename.lower():
