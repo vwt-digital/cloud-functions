@@ -6,12 +6,12 @@ import config
 import base64
 import traceback
 import flask
+import time
 import pandas as pd
 
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from google.cloud import storage
-from datetime import datetime as dt
 
 logging.basicConfig(level=logging.INFO)
 
@@ -92,7 +92,7 @@ def file_upload(request):
             logging.info('File uploaded: {}'.format(file.filename))
 
         filename = '{}_{}_upload.xlsx'.format(
-            dt.now().strftime("%Y%m%d%H%M%S"),
+            time.time(),
             config.TOPIC_NAME,
         )
         preprocessed = preprocessing(file)
