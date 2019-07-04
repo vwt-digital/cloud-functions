@@ -11,7 +11,6 @@ from google.cloud import pubsub_v1
 logging.basicConfig(level=logging.INFO)
 
 batch_settings = pubsub_v1.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
-
 publisher = pubsub.PublisherClient(batch_settings)
 
 
