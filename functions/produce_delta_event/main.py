@@ -18,7 +18,7 @@ batch_settings = pubsub_v1.types.BatchSettings(
 publisher = pubsub.PublisherClient(batch_settings)
 
 
-def publish_json(msg):
+def publish_json(msg, rowcount, rowmax):
     project_id = config.TOPIC_PROJECT_ID
     topic_name = config.TOPIC_NAME
     topic_path = publisher.topic_path(project_id, topic_name)
@@ -26,7 +26,8 @@ def publish_json(msg):
         topic_path, bytes(json.dumps(msg).encode('utf-8')))
     future.add_done_callback(
         lambda x: logging.info(
-            'Published msg with ID {}.'.format(future.result()))
+            'Published msg with ID {} (row {}/{}).'.format(
+                future.result(), rowcount, rowmax))
     )
 
 
@@ -142,8 +143,7 @@ def publish_diff(data, context):
             # Publish individual rows to topic
             i = 1
             for row in rows_json:
-                logging.info('Publish row {} out of {} rows'.format(i, len(rows_json)))
-                publish_json(row)
+                publish_json(row, rowcount=i, rowmax=len(rows_json))
                 i += 1
 
         # Write file to archive
