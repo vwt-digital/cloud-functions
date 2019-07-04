@@ -9,17 +9,6 @@ from google.cloud import storage
 logging.basicConfig(level=logging.INFO)
 
 
-def read_bytestream_from_filestore(filename, bucket_name):
-    client = storage.Client()
-    bucket = client.get_bucket(bucket_name)
-    blob = bucket.blob(filename)
-    bytesIO = BytesIO()
-    blob.download_to_file(bytesIO)
-    file = bytesIO.getvalue()
-    logging.info('Read file {} from {}'.format(filename, bucket_name))
-    return file
-
-
 def send_bytestream_to_filestore(bytesIO, filename, bucket_name):
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
@@ -39,9 +28,9 @@ def remove_file_from_filestore(filename, bucket_name):
     logging.info('Deleted file {} from {}'.format(filename, bucket_name))
 
 
-def preprocessing(file):
+def preprocessing(bucket_name, blob_name):
     logging.info('Preprocess start')
-    df = pd.read_excel(file, converters={i: str for i in range(len(config.COLUMN_MAPPING.keys()))})
+    df = df_from_store(bucket_name, blob_name)
 
     # Check if contains the right columns
     if set(list(df)) != set(config.COLUMN_MAPPING.keys()):
@@ -85,16 +74,23 @@ def preprocessing(file):
         file=bytesIO
     )
 
+def df_from_store(bucket_name, blob_name):
+    path = 'gs://{}/{}'.format(bucket_name, blob_name)
+    if blob_name.endswith('.xlsx'):
+        df = pd.read_excel(path, converters={i: str for i in range(len(config.COLUMN_MAPPING.keys()))})
+    if blob_name.endswith('.json'):
+        df = pd.read_json(path, dtype=False)
+    logging.info('Read file {} from {}'.format(blob_name, bucket_name))
+    return df
 
 def file_processing(data, context):
     logging.info('Run started')
-    bucket = data['bucket']
+    bucket_name = data['bucket']
     filename = data['name']
 
     try:
         # Read dataframe from store
-        file = read_bytestream_from_filestore(bucket, filename)
-        preprocessed = preprocessing(file)
+        preprocessed = preprocessing(filename, bucket_name)
 
         new_filename = '{}_{}_upload.xlsx'.format(
             str(int(time.time())),
@@ -102,7 +98,7 @@ def file_processing(data, context):
         )
 
         send_bytestream_to_filestore(preprocessed['file'], new_filename, config.INBOX)
-        remove_file_from_filestore(bucket, filename)
+        remove_file_from_filestore(bucket_name, filename)
 
         logging.info('Processing file {} successful'.format(filename))
     except Exception as e:
