@@ -92,7 +92,7 @@ def file_upload(request):
             logging.info('File uploaded: {}'.format(file.filename))
 
         filename = '{}_{}_upload.xlsx'.format(
-            time.time(),
+            str(int(time.time())),
             config.TOPIC_NAME,
         )
         preprocessed = preprocessing(file)

@@ -97,7 +97,7 @@ def file_processing(data, context):
         preprocessed = preprocessing(file)
 
         new_filename = '{}_{}_upload.xlsx'.format(
-            time.time(),
+            str(int(time.time())),
             config.TOPIC_NAME,
         )
 
