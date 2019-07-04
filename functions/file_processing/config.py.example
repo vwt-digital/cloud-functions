@@ -1,7 +1,7 @@
-# Config for upload_file
-ENGINE_VERIFICATION_TOKEN = 'random-string'
-MEDIA_TYPE = 'application/json'
-AUDIENCE = 'example.com'
+# Config for file_processing
+TOPIC_NAME = 'my-topic'
+MEDIA_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+INBOX = 'my-bucket'
 
 # Mapping column names
 COLUMN_MAPPING = {

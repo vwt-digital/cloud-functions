@@ -6,12 +6,12 @@ import config
 import base64
 import traceback
 import flask
+import time
 import pandas as pd
 
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from google.cloud import storage
-from datetime import datetime as dt
 
 logging.basicConfig(level=logging.INFO)
 
@@ -52,25 +52,19 @@ def preprocessing(file):
 
     df = df.rename(columns=config.COLUMN_MAPPING)
 
-    # Add potency based on filename
-    if 'potentieel' in file.filename.lower():
-        df['potency_status'] = 'potentieel'
-    else:
-        df['potency_status'] = 'definitief'
-
     # Only keep non-PII columns
     df = df[config.COLUMNS_NONPII]
 
     # Return Excel file as byte-stream
-    strIO = io.BytesIO()
-    excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
+    bytesIO = io.BytesIO()
+    excel_writer = pd.ExcelWriter(bytesIO, engine="xlsxwriter")
     df.to_excel(excel_writer, sheet_name="data", index=False)
     excel_writer.save()
 
     return dict(
         status='success',
         message='excel-file succesfully processed',
-        file=strIO
+        file=bytesIO
     )
 
 
@@ -92,7 +86,7 @@ def file_upload(request):
             logging.info('File uploaded: {}'.format(file.filename))
 
         filename = '{}_{}_upload.xlsx'.format(
-            dt.now().strftime("%Y%m%d%H%M%S"),
+            str(int(time.time())),
             config.TOPIC_NAME,
         )
         preprocessed = preprocessing(file)
@@ -103,6 +97,5 @@ def file_upload(request):
             return preprocessed['status'] + ': ' + preprocessed['message'], 400
 
     except Exception as e:
-        logging.info('Bad request')
-        logging.info(e)
+        logging.error('Bad request: ' + e)
         return 'Bad request: {}\n'.format(e), 400
