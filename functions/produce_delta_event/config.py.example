@@ -2,6 +2,7 @@
 TOPIC_PROJECT_ID = 'my-topic-id'
 TOPIC_NAME = 'my-topic-name'
 TOPIC_MAX_LATENCY = 0.25
+TOPIC_MAX_MESSAGES = 100
 INBOX = 'my-inbox-bucket'
 ARCHIVE = 'my-archive-bucket'
 ERROR = 'my-error-bucket'

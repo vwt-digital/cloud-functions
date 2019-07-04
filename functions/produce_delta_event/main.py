@@ -11,7 +11,8 @@ from google.cloud import pubsub_v1
 logging.basicConfig(level=logging.INFO)
 
 batch_settings = pubsub_v1.types.BatchSettings(
-    max_latency=config.TOPIC_MAX_LATENCY
+    # max_latency=config.TOPIC_MAX_LATENCY
+    max_messages=config.TOPIC_MAX_MESSAGES
 )
 
 publisher = pubsub.PublisherClient(batch_settings)
