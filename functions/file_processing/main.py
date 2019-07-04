@@ -78,8 +78,10 @@ def df_from_store(bucket_name, blob_name):
     path = 'gs://{}/{}'.format(bucket_name, blob_name)
     if blob_name.endswith('.xlsx'):
         df = pd.read_excel(path, converters={i: str for i in range(len(config.COLUMN_MAPPING.keys()))})
-    if blob_name.endswith('.json'):
+    elif blob_name.endswith('.json'):
         df = pd.read_json(path, dtype=False)
+    else:
+        raise ValueError('File is not json or xlsx: {}'.format(blob_name))
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
     return df
 
