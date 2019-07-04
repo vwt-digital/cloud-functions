@@ -11,22 +11,19 @@ from google.cloud import pubsub_v1
 logging.basicConfig(level=logging.INFO)
 
 batch_settings = pubsub_v1.types.BatchSettings(
-    # max_latency=config.TOPIC_MAX_LATENCY
-    max_messages=config.TOPIC_MAX_MESSAGES
+    **config.TOPIC_BATCH_SETTINGS
 )
 
 publisher = pubsub.PublisherClient(batch_settings)
 
 
-def publish_json(msg, rowcount, rowmax):
-    project_id = config.TOPIC_PROJECT_ID
-    topic_name = config.TOPIC_NAME
-    topic_path = publisher.topic_path(project_id, topic_name)
+def publish_json(msg, rowcount, rowmax, topic_project_id, topic_name):
+    topic_path = publisher.topic_path(topic_project_id, topic_name)
     future = publisher.publish(
         topic_path, bytes(json.dumps(msg).encode('utf-8')))
     future.add_done_callback(
         lambda x: logging.info(
-            'Published msg with ID {} (row {}/{}).'.format(
+            'Published msg with ID {} ({}/{} rows).'.format(
                 future.result(), rowcount, rowmax))
     )
 
@@ -143,7 +140,7 @@ def publish_diff(data, context):
             # Publish individual rows to topic
             i = 1
             for row in rows_json:
-                publish_json(row, rowcount=i, rowmax=len(rows_json))
+                publish_json(row, rowcount=i, rowmax=len(rows_json), **config.TOPIC_SETTINGS)
                 i += 1
 
         # Write file to archive
