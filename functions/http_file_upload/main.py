@@ -52,12 +52,6 @@ def preprocessing(file):
 
     df = df.rename(columns=config.COLUMN_MAPPING)
 
-    # Add potency based on filename
-    if 'potentieel' in file.filename.lower():
-        df['potency_status'] = 'potentieel'
-    else:
-        df['potency_status'] = 'definitief'
-
     # Only keep non-PII columns
     df = df[config.COLUMNS_NONPII]
 
