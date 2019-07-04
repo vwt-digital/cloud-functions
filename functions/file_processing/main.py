@@ -2,8 +2,10 @@ import json
 import config
 import datetime
 import logging
+import traceback
+import io
+import time
 import pandas as pd
-from io import BytesIO
 from google.cloud import storage
 
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +22,7 @@ def send_bytestream_to_filestore(bytesIO, filename, bucket_name):
     logging.info('Write file {} to {}'.format(filename, bucket_name))
 
 
-def remove_file_from_filestore(filename, bucket_name):
+def remove_file_from_filestore(bucket_name, filename):
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
     blob = bucket.blob(filename)
@@ -86,7 +88,7 @@ def file_processing(data, context):
 
     try:
         # Read dataframe from store
-        preprocessed = preprocessing(filename, bucket_name)
+        preprocessed = preprocessing(bucket_name, filename)
 
         new_filename = '{}_{}_upload.xlsx'.format(
             str(int(time.time())),
@@ -99,3 +101,4 @@ def file_processing(data, context):
         logging.info('Processing file {} successful'.format(filename))
     except Exception as e:
         logging.error('Processing file {} failed!'.format(filename))
+        traceback.print_exc()
