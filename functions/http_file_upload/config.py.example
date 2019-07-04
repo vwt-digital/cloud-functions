@@ -1,4 +1,4 @@
-# Config for upload_file
+# Config for http_file_upload
 ENGINE_VERIFICATION_TOKEN = 'random-string'
 MEDIA_TYPE = 'application/json'
 AUDIENCE = 'example.com'

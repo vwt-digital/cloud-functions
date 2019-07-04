@@ -14,8 +14,9 @@ def read_bytestream_from_filestore(filename, bucket_name):
     blob = bucket.blob(filename)
     bytesIO = BytesIO()
     blob.download_to_file(bytesIO)
-    bytesIO.seek(0)
-    return bytesIO
+    file = bytesIO.getvalue()
+    logging.info('Read file {} from {}'.format(filename, bucket_name))
+    return file
 
 
 def send_bytestream_to_filestore(bytesIO, filename, bucket_name):
