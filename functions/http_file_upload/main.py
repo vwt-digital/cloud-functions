@@ -62,15 +62,15 @@ def preprocessing(file):
     df = df[config.COLUMNS_NONPII]
 
     # Return Excel file as byte-stream
-    strIO = io.BytesIO()
-    excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
+    bytesIO = io.BytesIO()
+    excel_writer = pd.ExcelWriter(bytesIO, engine="xlsxwriter")
     df.to_excel(excel_writer, sheet_name="data", index=False)
     excel_writer.save()
 
     return dict(
         status='success',
         message='excel-file succesfully processed',
-        file=strIO
+        file=bytesIO
     )
 
 
@@ -103,6 +103,5 @@ def file_upload(request):
             return preprocessed['status'] + ': ' + preprocessed['message'], 400
 
     except Exception as e:
-        logging.info('Bad request')
-        logging.info(e)
+        logging.error('Bad request: ' + e)
         return 'Bad request: {}\n'.format(e), 400
