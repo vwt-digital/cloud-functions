@@ -1,6 +1,7 @@
 import json
 import config
 import datetime
+import logging
 import pandas as pd
 from io import BytesIO
 from google.cloud import storage
