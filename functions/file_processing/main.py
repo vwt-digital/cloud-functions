@@ -92,7 +92,7 @@ def file_processing(data, context):
 
         new_filename = '{}_{}_upload.xlsx'.format(
             str(int(time.time())),
-            config.TOPIC_NAME,
+            config.TOPIC_SETTINGS['topic_name'],
         )
 
         send_bytestream_to_filestore(preprocessed['file'], new_filename, config.INBOX)
