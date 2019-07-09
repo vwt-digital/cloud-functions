@@ -33,8 +33,8 @@ def preprocessing(file):
         df = pd.read_excel(file, converters={i: str for i in range(len(config.COLUMN_MAPPING.keys()))})
     except Exception as e:
         df = pd.read_excel(file)
-        message = 'The uploaded file does not contain the correct columns. The following ones are missing: {}'.format(
-            ', '.join(list(set(config.COLUMN_MAPPING.keys()) - set(list(df)))))
+        message = 'The file cannot be read by Python. The uploaded file does not contain the correct columns. The following ones are missing: {}'.format(
+            ', '.join(list(set([i for i in config.COLUMN_MAPPING.keys()]) - set(list(df)))))
         logging.info(message)
         traceback.print_exc()
         return dict(
@@ -45,7 +45,7 @@ def preprocessing(file):
     # Check if contains the right columns
     if set(list(df)) != set(config.COLUMN_MAPPING.keys()):
         message = 'The uploaded file does not contain the correct columns. The following ones are missing: {}'.format(
-            ', '.join(list(set(config.COLUMN_MAPPING.keys()) - set(list(df)))))
+            ', '.join(list(set([i for i in config.COLUMN_MAPPING.keys()]) - set(list(df)))))
         logging.info(message)
         return dict(
             status='failure',
