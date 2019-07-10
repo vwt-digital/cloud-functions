@@ -34,8 +34,10 @@ def calculate_diff(df_old, df_new):
 
 def df_from_store(bucket_name, blob_name):
     path = 'gs://{}/{}'.format(bucket_name, blob_name)
+    logging.info('Reading {}'.format(path))
     if blob_name.endswith('.xlsx'):
-        df = pd.read_excel(path, converters={i: str for i in range(len(config.COLUMNS_NONPII))})
+        converter = {i: str for i in range(len(config.COLUMNS_NONPII))}
+        df = pd.read_excel(path, converters=converter)
     if blob_name.endswith('.json'):
         df = pd.read_json(path, dtype=False)
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
