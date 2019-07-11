@@ -29,12 +29,23 @@ def send_bytestream_to_filestore(bytesIO, filename, bucket_name):
 
 def preprocessing(file):
     logging.info('Preprocess start')
-    df = pd.read_excel(file, converters={i: str for i in range(len(config.COLUMN_MAPPING.keys()))})
+    try:
+        df = pd.read_excel(file, converters={i: str for i in range(len(config.COLUMN_MAPPING.keys()))})
+    except Exception as e:
+        df = pd.read_excel(file)
+        message = 'The file cannot be read by Python. The uploaded file does not contain the correct columns. The following ones are missing: {}'.format(
+            ', '.join(list(set([i for i in config.COLUMN_MAPPING.keys()]) - set(list(df)))))
+        logging.info(message)
+        traceback.print_exc()
+        return dict(
+            status='failure',
+            message=message
+        )
 
     # Check if contains the right columns
     if set(list(df)) != set(config.COLUMN_MAPPING.keys()):
         message = 'The uploaded file does not contain the correct columns. The following ones are missing: {}'.format(
-            ', '.join(list(set(config.COLUMN_MAPPING.keys()) - set(list(df)))))
+            ', '.join(list(set([i for i in config.COLUMN_MAPPING.keys()]) - set(list(df)))))
         logging.info(message)
         return dict(
             status='failure',
@@ -87,7 +98,7 @@ def file_upload(request):
 
         filename = '{}_{}_upload.xlsx'.format(
             str(int(time.time())),
-            config.TOPIC_NAME,
+            config.TOPIC_SETTINGS['topic_name'],
         )
         preprocessed = preprocessing(file)
         if preprocessed['status'] == 'success':
@@ -97,5 +108,4 @@ def file_upload(request):
             return preprocessed['status'] + ': ' + preprocessed['message'], 400
 
     except Exception as e:
-        logging.error('Bad request: ' + e)
         return 'Bad request: {}\n'.format(e), 400
