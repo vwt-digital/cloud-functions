@@ -3,7 +3,6 @@ import os
 import io
 import json
 import config
-import datetime
 import pandas as pd
 from google.cloud import storage, pubsub
 from google.cloud import pubsub_v1
