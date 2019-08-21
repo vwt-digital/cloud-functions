@@ -5,67 +5,16 @@ import base64
 import os
 
 from google.auth.transport import requests
-from google.cloud import datastore
 from google.oauth2 import id_token
 
-
-class DBProcessor(object):
-    def __init__(self):
-        self.client = datastore.Client()
-        pass
-
-    def process(self, payload):
-        kind, key = self.identity(payload)
-        entity_key = self.client.key(kind, key)
-        entity = self.client.get(entity_key)
-
-        if entity is None:
-            entity = datastore.Entity(key=entity_key)
-
-        self.populate_from_payload(entity, payload)
-        self.client.put(entity)
-
-    def identity(self, payload):
-        return '', ''
-
-    @staticmethod
-    def populate_from_payload(entity, payload):
-        for name in payload.keys():
-            value = payload[name]
-            entity[name] = value
-
-
-class EmployeeProcessor(DBProcessor):
-
-    def __init__(self):
-        DBProcessor.__init__(self)
-
-    @staticmethod
-    def selector():
-        return 'employee'
-
-    def identity(self, payload):
-        return 'AFAS_HRM', payload['email_address']
-
-
-class DepartmentProcessor(DBProcessor):
-
-    def __init__(self):
-        DBProcessor.__init__(self)
-
-    @staticmethod
-    def selector():
-        return 'department'
-
-    def identity(self, payload):
-        return 'Departments', payload['Afdeling']
-
+from dbprocessor import EmployeeProcessor, DepartmentProcessor, BusinessUnitProcessor, CompanyProcessor
 
 parsers = {
     EmployeeProcessor.selector(): EmployeeProcessor(),
-    DepartmentProcessor.selector(): DepartmentProcessor()
+    DepartmentProcessor.selector(): DepartmentProcessor(),
+    BusinessUnitProcessor.selector(): BusinessUnitProcessor(),
+    CompanyProcessor.selector(): CompanyProcessor()
 }
-
 
 selector = os.environ.get('DATA_SELECTOR', 'Required parameter is missed')
 verification_token = os.environ['PUBSUB_VERIFICATION_TOKEN']
