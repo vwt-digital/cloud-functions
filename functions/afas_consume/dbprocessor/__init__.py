@@ -1,6 +1,7 @@
 from google.cloud import datastore
 import config
 
+
 class DBProcessor(object):
     def __init__(self):
         self.client = datastore.Client()

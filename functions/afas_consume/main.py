@@ -9,6 +9,8 @@ from google.oauth2 import id_token
 
 from dbprocessor import EmployeeProcessor, DepartmentProcessor, BusinessUnitProcessor, CompanyProcessor
 
+import config
+
 parsers = {
     EmployeeProcessor.selector(): EmployeeProcessor(),
     DepartmentProcessor.selector(): DepartmentProcessor(),
@@ -18,7 +20,7 @@ parsers = {
 
 selector = os.environ.get('DATA_SELECTOR', 'Required parameter is missed')
 verification_token = os.environ['PUBSUB_VERIFICATION_TOKEN']
-domain_token = os.environ['DOMAIN_VALIDATION_TOKEN']
+domain_token = config.DOMAIN_VALIDATION_TOKEN
 
 
 def topic_to_datastore(request):
