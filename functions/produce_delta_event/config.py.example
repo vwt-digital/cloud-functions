@@ -1,9 +1,29 @@
-# Config for produce_delta_event
-TOPIC_PROJECT_ID = 'my-topic-id'
-TOPIC_NAME = 'my-topic-name'
-TOPIC_MAX_LATENCY = 0.25
-TOPIC_MAX_MESSAGES = 100
+# Topic to publish to
+TOPIC_SETTINGS = {
+    'topic_project_id': 'my-topic-id',
+    'topic_name': 'my-topic-name'
+}
+
+# Parameters added to pubsub_v1.types.BatchSettings to initialize pubsub PublisherClient
+TOPIC_BATCH_SETTINGS = {
+    'max_messages': 100
+}
+
+# Parameters added to pandas.read_csv when reading csv file
+CSV_DIALECT_PARAMETERS = {
+    'sep': ',',
+    'quotechar': '"'
+}
+
+# Storage buckets to use
+# INBOX will be used to load input
+# ARCHIVE will be used to store all handled input, input on INBOX will be removed when stored to ARCHIVE
+# If INBOX and ARCHIVE are the same bucket, original input will remain on bucket
+# ERROR is optional, when defined any invalid input file will be stored on ERROR. If INBOX and ARCHIVE are different
+# buckets, then original input will be deleted when stored on ERROR.
 INBOX = 'my-inbox-bucket'
 ARCHIVE = 'my-archive-bucket'
 ERROR = 'my-error-bucket'
+
+# Optional, if True then all items will be published, regardless changes to previous data
 FULL_LOAD = False
