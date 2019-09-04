@@ -37,6 +37,8 @@ def df_from_store(bucket_name, blob_name):
     if blob_name.endswith('.xlsx'):
         converter = {i: str for i in range(len(config.COLUMNS_NONPII))}
         df = pd.read_excel(path, converters=converter)
+    if blob_name.endswith('.csv'):
+        df = pd.read_csv(path, **config.CSV_DIALECT_PARAMETERS)
     if blob_name.endswith('.json'):
         df = pd.read_json(path, dtype=False)
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
@@ -53,6 +55,10 @@ def df_to_store(bucket_name, blob_name, df):
         excel_writer.save()
         file = strIO.getvalue()
         content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    elif blob_name.endswith('.csv'):
+        new_blob = blob_name
+        file = df.to_csv(**config.CSV_DIALECT_PARAMETERS)
+        content_type = 'text/csv'
     else:
         new_blob = os.path.splitext(blob_name)[0] + '.json'
         blob_str = df.to_json()
@@ -84,13 +90,23 @@ def remove_from_store(bucket_name, blob_name):
 def get_prev_blob(bucket_name):
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
-    blobs = bucket.list_blobs()
-    blist = {}
-    for blob in blobs:
-        blist[blob.time_created.timestamp()] = blob.name
-    if blist:
-        latest_key = max(blist, key=int)
-        return blist.get(latest_key)
+    blobs = list(bucket.list_blobs())
+    if blobs:
+
+        def compare_lobs(lob):
+            return lob.updated
+
+        blobs.sort(key=compare_lobs, reverse=True)
+
+        if config.ARCHIVE == config.INBOX:
+            if len(blobs) > 1:
+                return blobs[1].name
+            else:
+                return None
+        else:
+            return blobs[0].name
+    else:
+        return None
 
 
 def publish_diff(data, context):
@@ -105,10 +121,10 @@ def publish_diff(data, context):
         df_new = df_from_store(bucket, filename)
         # Get previous data from archive
         blob_prev = get_prev_blob(config.ARCHIVE)
+        full_load = config.FULL_LOAD if hasattr(config, 'FULL_LOAD') else False
 
         # Read previous data from archive and compare
-        df_diff = None
-        if blob_prev and (not config.FULL_LOAD):
+        if blob_prev and (not full_load):
             df_prev = df_from_store(config.ARCHIVE, blob_prev)
             cols_prev = set(df_prev.columns)
             cols_new = set(df_new.columns)
@@ -141,18 +157,25 @@ def publish_diff(data, context):
                 publish_json(row, rowcount=i, rowmax=len(rows_json), **config.TOPIC_SETTINGS)
                 i += 1
 
-        # Write file to archive
-        df_to_store(config.ARCHIVE, filename, df_new)
-
-        # Remove file from inbox
-        remove_from_store(config.INBOX, filename)
+        if config.INBOX != config.ARCHIVE:
+            # Write file to archive
+            df_to_store(config.ARCHIVE, filename, df_new)
+            # Remove file from inbox
+            remove_from_store(config.INBOX, filename)
 
         logging.info('Run succeeded')
 
     except Exception as e:
-        df_to_store(config.ERROR, filename, df_new)
-        remove_from_store(config.INBOX, filename)
+        if hasattr(config, 'ERROR'):
+            df_to_store(config.ERROR, filename, df_new)
+        if config.INBOX != config.ARCHIVE:
+            remove_from_store(config.INBOX, filename)
         logging.error('Processing failure {}'.format(e))
         raise
     finally:
         logging.info('Run done')
+
+
+# main defined for testing
+if __name__ == '__main__':
+    publish_diff({'bucket': 'my-inbox-bucket', 'name': 'testfile.csv'}, {'event_id': 0, 'event_type': 'none'})
