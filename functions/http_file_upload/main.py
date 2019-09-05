@@ -44,9 +44,19 @@ def preprocessing(file):
 
     # Check if contains the right columns
     if set(list(df)) != set(config.COLUMN_MAPPING.keys()):
-        message = 'The uploaded file does not contain the correct columns. The following ones are missing: {}'.format(
-            ', '.join(list(set([i for i in config.COLUMN_MAPPING.keys()]) - set(list(df)))))
-        logging.info(message)
+        cols_expected = set([i for i in config.COLUMN_MAPPING.keys()])
+        cols_file = set(list(df))
+        missing = cols_expected - cols_file
+        message = ''
+        if len(missing) > 0:
+            message = 'The uploaded file does not contain the correct columns. The following columns are missing: {}'.format(
+                ', '.join(list(missing)))
+            logging.info(message)
+        to_many = cols_file - cols_expected
+        if len(to_many) > 0:
+            message = '\n'.join([message, 'The uploaded file does not contain the correct columns. The following columns are not expected: {}'.format(
+                ', '.join(list(to_many)))])
+            logging.info(message)
         return dict(
             status='failure',
             message=message
