@@ -73,7 +73,7 @@ def preprocessing(bucket_name, blob_name):
 def df_from_store(bucket_name, blob_name):
     path = 'gs://{}/{}'.format(bucket_name, blob_name)
     if blob_name.endswith('.xlsx'):
-        df = pd.read_excel(path, converters={i: str for i in range(len(config.COLUMN_MAPPING.keys()))})
+        df = pd.read_excel(path, dtype = str)
     elif blob_name.endswith('.json'):
         df = pd.read_json(path, dtype=False)
     else:
