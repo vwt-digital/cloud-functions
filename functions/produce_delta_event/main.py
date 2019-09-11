@@ -25,8 +25,15 @@ def publish_json(msg, rowcount, rowmax, topic_project_id, topic_name):
 
 
 def calculate_diff(df_old, df_new):
-    joined = df_old.drop_duplicates().merge(
-        df_new.drop_duplicates(), how='right', indicator=True)
+    joined = df_old.\
+        drop_duplicates().\
+        drop(config.COLUMNS_DROP, axis = 1).\
+        merge(
+            df_new.\
+                drop_duplicates().\
+                drop(config.COLUMNS_DROP, axis = 1),
+            how='right', 
+            indicator=True)
     diff = joined.query("_merge != 'both'").drop('_merge', axis=1)
     return diff
 
