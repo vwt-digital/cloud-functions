@@ -27,3 +27,16 @@ ERROR = 'my-error-bucket'
 
 # Optional, if True then all items will be published, regardless changes to previous data
 FULL_LOAD = False
+
+# Dict that contains mapping from column names to the used column names
+COLUMN_MAPPING = {
+    'Example A': 'example_A',
+}
+
+# List of columns without personal data
+COLUMNS_NONPII = [
+]
+
+# List of columns to drop (for instance containing reporting date)
+COLUMNS_DROP = [
+]
