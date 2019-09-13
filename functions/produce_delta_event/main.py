@@ -25,7 +25,7 @@ def publish_json(msg, rowcount, rowmax, topic_project_id, topic_name):
 
 
 def calculate_diff(df_old, df_new):
-    columns_drop = config.COLUMNS_DROP if hasattr(config, 'COLUMNS_DROP') else []
+    columns_drop = getattr(config, 'COLUMNS_DROP', [])
     joined = df_old.\
         drop_duplicates().\
         drop(columns_drop, axis = 1).\
