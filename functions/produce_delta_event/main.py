@@ -2,6 +2,7 @@ import logging
 import os
 import io
 import json
+import gc
 import config
 import pandas as pd
 from google.cloud import storage, pubsub
@@ -131,6 +132,8 @@ def publish_diff(data, context):
         blob_prev = get_prev_blob(config.ARCHIVE)
         full_load = config.FULL_LOAD if hasattr(config, 'FULL_LOAD') else False
 
+        delete_frames = [df_new]
+
         # Read previous data from archive and compare
         if blob_prev and (not full_load):
             df_prev = df_from_store(config.ARCHIVE, blob_prev)
@@ -145,8 +148,13 @@ def publish_diff(data, context):
                     "', '".join(list(diff)),
                 ))
             df_diff = calculate_diff(df_prev, df_new)
+            delete_frames.append(df_prev)
         else:
-            df_diff = df_new.copy().drop_duplicates()
+            df_diff = df_new.drop_duplicates()
+
+        # Delete df_new, df_prev
+        del [delete_frames]
+        t =gc.collect()
 
         # Check the number of new records
         # In case of no new records: don't send any updates
@@ -157,6 +165,10 @@ def publish_diff(data, context):
 
             # Export to json
             rows_str = df_diff.to_json(orient='records')
+            # Delete df_diff
+            delete_frames = [df_diff]
+            del [delete_frames]
+            t = gc.collect()
             rows_json = json.loads(rows_str)
 
             # Publish individual rows to topic
