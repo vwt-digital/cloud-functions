@@ -9,10 +9,10 @@ import pandas as pd
 from google.cloud import storage
 
 logging.basicConfig(level=logging.INFO)
+client = storage.Client()
 
 
 def send_bytestream_to_filestore(bytesIO, filename, bucket_name):
-    client = storage.Client()
     bucket = client.get_bucket(bucket_name)
     blob = storage.Blob(filename, bucket)
     blob.upload_from_string(
@@ -23,7 +23,6 @@ def send_bytestream_to_filestore(bytesIO, filename, bucket_name):
 
 
 def remove_file_from_filestore(bucket_name, filename):
-    client = storage.Client()
     bucket = client.get_bucket(bucket_name)
     blob = bucket.blob(filename)
     blob.delete()
@@ -80,10 +79,11 @@ def df_from_store(bucket_name, blob_name):
             df = pd.read_json(path, dtype=False)
         except Exception as e:
             logging.info('Could not load valid json, trying different load type')
-            with open(path) as source:
-                json_source = source.read()
-                data = json.loads('[{}]'.format(json_source))
-                df = pd.read_json(path, dtype=False)
+            bucket = client.get_bucket(bucket_name)
+            blob = storage.Blob(blob_name, bucket)
+            content = blob.download_as_string()
+            data = json.loads('[{}]'.format(content))
+            df = pd.read_json(path, dtype=False)
     else:
         raise ValueError('File is not json or xlsx: {}'.format(blob_name))
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
