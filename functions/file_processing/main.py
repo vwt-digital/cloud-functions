@@ -82,7 +82,7 @@ def df_from_store(bucket_name, blob_name):
             bucket = client.get_bucket(bucket_name)
             blob = storage.Blob(blob_name, bucket)
             content = blob.download_as_string()
-            data = json.loads('[{}]'.format(content))
+            data = json.loads('[{}]'.format(content.decode('utf-8')))
             df = pd.read_json(path, dtype=False)
     else:
         raise ValueError('File is not json or xlsx: {}'.format(blob_name))
