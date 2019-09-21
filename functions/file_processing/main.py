@@ -78,12 +78,12 @@ def df_from_store(bucket_name, blob_name):
         try:
             df = pd.read_json(path, dtype=False)
         except Exception as e:
-            logging.info('Could not load valid json, trying to normalize')
+            logging.warning('Could not load valid json, trying to normalize')
             bucket = client.get_bucket(bucket_name)
             blob = storage.Blob(blob_name, bucket)
             content = blob.download_as_string()
             data = json.loads(content.decode('utf-8'))
-            df = pd.read_json(data['Rows'])
+            df = pd.DataFrame.from_records(data['Rows'])
     else:
         raise ValueError('File is not json or xlsx: {}'.format(blob_name))
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
