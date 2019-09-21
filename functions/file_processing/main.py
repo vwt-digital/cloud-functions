@@ -70,16 +70,25 @@ def preprocessing(bucket_name, blob_name):
         file=bytesIO
     )
 
+
 def df_from_store(bucket_name, blob_name):
     path = 'gs://{}/{}'.format(bucket_name, blob_name)
     if blob_name.endswith('.xlsx'):
-        df = pd.read_excel(path, dtype = str)
+        df = pd.read_excel(path, dtype=str)
     elif blob_name.endswith('.json'):
-        df = pd.read_json(path, dtype=False)
+        try:
+            df = pd.read_json(path, dtype=False)
+        except Exception as e:
+            logging.info('Could not load valid json, trying different load type')
+            with open(path) as source:
+                json_source = source.read()
+                data = json.loads('[{}]'.format(json_source))
+                df = pd.read_json(path, dtype=False)
     else:
         raise ValueError('File is not json or xlsx: {}'.format(blob_name))
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
     return df
+
 
 def file_processing(data, context):
     logging.info('Run started')
