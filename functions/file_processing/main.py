@@ -83,7 +83,11 @@ def df_from_store(bucket_name, blob_name):
             blob = storage.Blob(blob_name, bucket)
             content = blob.download_as_string()
             data = json.loads(content.decode('utf-8'))
-            df = pd.DataFrame.from_records(data['Rows'])
+            json_elements = getattr(config, 'JSON_ELEMENTS', [])
+            for el in json_elements:
+                data = data[el]
+            df = pd.DataFrame.from_records(data)
+            logging.info('Succesfully normalized json data')
     else:
         raise ValueError('File is not json or xlsx: {}'.format(blob_name))
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
