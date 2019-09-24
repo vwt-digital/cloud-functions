@@ -9,10 +9,10 @@ import pandas as pd
 from google.cloud import storage
 
 logging.basicConfig(level=logging.INFO)
+client = storage.Client()
 
 
 def send_bytestream_to_filestore(bytesIO, filename, bucket_name):
-    client = storage.Client()
     bucket = client.get_bucket(bucket_name)
     blob = storage.Blob(filename, bucket)
     blob.upload_from_string(
@@ -23,7 +23,6 @@ def send_bytestream_to_filestore(bytesIO, filename, bucket_name):
 
 
 def remove_file_from_filestore(bucket_name, filename):
-    client = storage.Client()
     bucket = client.get_bucket(bucket_name)
     blob = bucket.blob(filename)
     blob.delete()
@@ -70,16 +69,30 @@ def preprocessing(bucket_name, blob_name):
         file=bytesIO
     )
 
+
 def df_from_store(bucket_name, blob_name):
     path = 'gs://{}/{}'.format(bucket_name, blob_name)
     if blob_name.endswith('.xlsx'):
-        df = pd.read_excel(path, dtype = str)
+        df = pd.read_excel(path, dtype=str)
     elif blob_name.endswith('.json'):
-        df = pd.read_json(path, dtype=False)
+        try:
+            df = pd.read_json(path, dtype=False)
+        except Exception as e:
+            logging.warning('Could not load valid json, trying to normalize')
+            bucket = client.get_bucket(bucket_name)
+            blob = storage.Blob(blob_name, bucket)
+            content = blob.download_as_string()
+            data = json.loads(content.decode('utf-8'))
+            json_elements = getattr(config, 'JSON_ELEMENTS', [])
+            for el in json_elements:
+                data = data[el]
+            df = pd.DataFrame.from_records(data)
+            logging.info('Succesfully normalized json data')
     else:
         raise ValueError('File is not json or xlsx: {}'.format(blob_name))
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
     return df
+
 
 def file_processing(data, context):
     logging.info('Run started')
