@@ -56,3 +56,8 @@ COLUMNS_PUBLISH = {
 # If the JSON data top-level object is a list (like [{"field1": "value1"}]), then ATTRIBUTE_WITH_THE_LIST should
 # not be declared.
 ATTRIBUTE_WITH_THE_LIST = 'rows'
+
+# When FILEPATH_PREFIX_FILTER is defined, the publish_diff function will only handle files with a name that
+# starts with the specified prefix. For example, when setting FILEPATH_PREFIX_FILTER to source/mydatadir, only
+# files in the source/mydatadir will be handled.
+FILEPATH_PREFIX_FILTER = 'source/mydatadir'
