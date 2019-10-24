@@ -13,6 +13,17 @@ batch_settings = pubsub_v1.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
 publisher = pubsub.PublisherClient(batch_settings)
 
 
+def gather_publish_msg(msg):
+    if hasattr(config, 'COLUMNS_PUBLISH'):
+        gathered_msg = {}
+        for msg_key, value_key in config.COLUMNS_PUBLISH.items():
+            if value_key in msg:
+                gathered_msg[msg_key] = msg[value_key]
+        return gathered_msg
+
+    return msg
+
+
 def publish_json(msg, rowcount, rowmax, topic_project_id, topic_name):
     topic_path = publisher.topic_path(topic_project_id, topic_name)
     future = publisher.publish(
@@ -28,12 +39,12 @@ def calculate_diff(df_old, df_new):
     columns_drop = getattr(config, 'COLUMNS_DROP', [])
     joined = df_old.\
         drop_duplicates().\
-        drop(columns_drop, axis = 1).\
+        drop(columns_drop, axis=1).\
         merge(
-            df_new.\
-                drop_duplicates().\
-                drop(columns_drop, axis = 1),
-            how='right', 
+            df_new.
+            drop_duplicates().
+            drop(columns_drop, axis=1),
+            how='right',
             indicator=True)
     diff = joined.query("_merge != 'both'").drop('_merge', axis=1)
     return diff
@@ -48,7 +59,12 @@ def df_from_store(bucket_name, blob_name):
     if blob_name.endswith('.csv'):
         df = pd.read_csv(path, **config.CSV_DIALECT_PARAMETERS)
     if blob_name.endswith('.json'):
-        df = pd.read_json(path, dtype=False)
+        if hasattr(config, 'ATTRIBUTE_WITH_THE_LIST'):
+            bucket = storage.Client().get_bucket(bucket_name)
+            json_data = json.loads(bucket.get_blob(blob_name).download_as_string())
+            df = pd.DataFrame(json_data[config.ATTRIBUTE_WITH_THE_LIST])
+        else:
+            df = pd.read_json(path, dtype=False)
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
     return df
 
@@ -71,7 +87,11 @@ def df_to_store(bucket_name, blob_name, df):
         new_blob = os.path.splitext(blob_name)[0] + '.json'
         blob_str = df.to_json()
         blob_json = json.loads(blob_str)
-        file = json.dumps(blob_json).encode('utf-8')
+        if hasattr(config, 'ATTRIBUTE_WITH_THE_LIST'):
+            blob_data = {config.ATTRIBUTE_WITH_THE_LIST: blob_json}
+        else:
+            blob_data = blob_json
+        file = json.dumps(blob_data).encode('utf-8')
         content_type = 'application/json'
 
     # Create blob
@@ -162,7 +182,7 @@ def publish_diff(data, context):
             # Publish individual rows to topic
             i = 1
             for row in rows_json:
-                publish_json(row, rowcount=i, rowmax=len(rows_json), **config.TOPIC_SETTINGS)
+                publish_json(gather_publish_msg(row), rowcount=i, rowmax=len(rows_json), **config.TOPIC_SETTINGS)
                 i += 1
 
         if config.INBOX != config.ARCHIVE:
@@ -186,4 +206,4 @@ def publish_diff(data, context):
 
 # main defined for testing
 if __name__ == '__main__':
-    publish_diff({'bucket': 'my-inbox-bucket', 'name': 'testfile.csv'}, {'event_id': 0, 'event_type': 'none'})
+    publish_diff({'bucket': config.INBOX, 'name': 'testfile.json'}, {'event_id': 0, 'event_type': 'none'})

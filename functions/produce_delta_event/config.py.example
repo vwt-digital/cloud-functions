@@ -40,3 +40,19 @@ COLUMNS_NONPII = [
 # List of columns to drop (for instance containing reporting date)
 COLUMNS_DROP = [
 ]
+
+# Specification of attributes in published message. Key value will be key value
+# in the published message, value in COLUMNS_PUBLISH will be attribute in source from which
+# value of the respective field will be retrieved.
+COLUMNS_PUBLISH = {
+    "attribute_name_in_msg_1": "attribute_name_in_source_1",
+    "attribute_name_in_msg_2": "attribute_name_in_source_2",
+    "name": "last_name"
+}
+
+# ATTRIBUTE_WITH_THE_LIST is used when reading data from JSON where the top-level is an object instead
+# of a list. The list containing the data to load is the value of an attribute of the top-level object.
+# For example, setting ATTRIBUTE_WITH_THE_LIST to rows, will load this JSON: {"rows": [{"field1": "value1"}] }
+# If the JSON data top-level object is a list (like [{"field1": "value1"}]), then ATTRIBUTE_WITH_THE_LIST should
+# not be declared.
+ATTRIBUTE_WITH_THE_LIST = 'rows'
