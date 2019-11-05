@@ -116,10 +116,10 @@ def remove_from_store(bucket_name, blob_name):
     logging.info('Deleted file {} from {}'.format(blob_name, bucket_name))
 
 
-def get_prev_blob(bucket_name):
+def get_prev_blob(bucket_name, prefix_filter):
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
-    blobs = list(bucket.list_blobs())
+    blobs = list(bucket.list_blobs(prefix=prefix_filter))
     if blobs:
 
         def compare_lobs(lob):
@@ -152,7 +152,7 @@ def publish_diff(data, context):
             # Read dataframe from store
             df_new = df_from_store(bucket, filename)
             # Get previous data from archive
-            blob_prev = get_prev_blob(config.ARCHIVE)
+            blob_prev = get_prev_blob(config.ARCHIVE, prefix_filter)
             full_load = config.FULL_LOAD if hasattr(config, 'FULL_LOAD') else False
 
             # Read previous data from archive and compare
