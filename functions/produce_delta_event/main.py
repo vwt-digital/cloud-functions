@@ -64,8 +64,9 @@ def df_from_store(bucket_name, blob_name, from_archive=False):
     if blob_name.endswith('.xlsx'):
         if from_archive:
             df = pd.read_excel(path, dtype=str)
-        converter = {i: str for i in range(len(config.COLUMNS_NONPII))}
-        df = pd.read_excel(path, converters=converter)
+        else:
+            converter = {i: str for i in range(len(config.COLUMNS_NONPII))}
+            df = pd.read_excel(path, converters=converter)
     if blob_name.endswith('.csv'):
         df = pd.read_csv(path, **config.CSV_DIALECT_PARAMETERS)
     if blob_name.endswith('.json'):
