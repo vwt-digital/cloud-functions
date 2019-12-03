@@ -38,6 +38,10 @@ def publish_json(msg, rowcount, rowmax, topic_project_id, topic_name):
 
 def calculate_diff(df_old, df_new):
     if len(df_old.columns) != len(df_new.columns):
+        logging.info('Different columns found')
+        if len(set(df_new.columns) - set(config.COLUMNS_NONPII)) > 0:
+            logging.warning('Not correct columns found in new file')
+            raise ValueError('Not correct columns found in new file')
         return df_new
 
     columns_drop = getattr(config, 'COLUMNS_DROP', [])
@@ -163,16 +167,6 @@ def publish_diff(data, context):
             # Read previous data from archive and compare
             if blob_prev and (not full_load):
                 df_prev = df_from_store(config.ARCHIVE, blob_prev, from_archive=True)
-                cols_prev = set(df_prev.columns)
-                cols_new = set(df_new.columns)
-                # When there are different columns in new file with respect to the old one,
-                # the file is rejected.
-                if cols_prev != cols_new:
-                    diff = cols_new - cols_prev
-                    raise ValueError("Different schema: {} '{}' found in new delivery but not in previous delivery".format(
-                        'column' if len(diff) == 1 else 'columns',
-                        "', '".join(list(diff)),
-                    ))
                 df_diff = calculate_diff(df_prev, df_new)
             else:
                 df_diff = df_new.copy().drop_duplicates()
