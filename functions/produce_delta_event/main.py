@@ -37,6 +37,9 @@ def publish_json(msg, rowcount, rowmax, topic_project_id, topic_name):
 
 
 def calculate_diff(df_old, df_new):
+    if len(df_old.columns) != len(df_new.columns):
+        return df_new
+
     columns_drop = getattr(config, 'COLUMNS_DROP', [])
     joined = df_old.\
         drop_duplicates().\
@@ -51,10 +54,12 @@ def calculate_diff(df_old, df_new):
     return diff
 
 
-def df_from_store(bucket_name, blob_name):
+def df_from_store(bucket_name, blob_name, from_archive=False):
     path = 'gs://{}/{}'.format(bucket_name, blob_name)
     logging.info('Reading {}'.format(path))
     if blob_name.endswith('.xlsx'):
+        if from_archive:
+            df = pd.read_excel(path, dtype=str)
         converter = {i: str for i in range(len(config.COLUMNS_NONPII))}
         df = pd.read_excel(path, converters=converter)
     if blob_name.endswith('.csv'):
@@ -157,7 +162,7 @@ def publish_diff(data, context):
 
             # Read previous data from archive and compare
             if blob_prev and (not full_load):
-                df_prev = df_from_store(config.ARCHIVE, blob_prev)
+                df_prev = df_from_store(config.ARCHIVE, blob_prev, from_archive=True)
                 cols_prev = set(df_prev.columns)
                 cols_new = set(df_new.columns)
                 # When there are different columns in new file with respect to the old one,
