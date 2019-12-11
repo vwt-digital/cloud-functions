@@ -43,10 +43,20 @@ COLUMNS_DROP = [
 
 # Specification of attributes in published message. Key value will be key value
 # in the published message, value in COLUMNS_PUBLISH will be attribute in source from which
-# value of the respective field will be retrieved.
+# value of the respective field will be retrieved when using it as a string {[name]: [field]}.
+# When using a dictionary {[name]: {'source_attribute': [field], 'conversion': [conversion]}}, the
+# key 'source_attribute' will be the object from where the field will be fetched. An optional
+# key 'conversion' can be filled with one of the following to convert the
+# fetched value: 'lowercase', 'uppercase' or 'capitalize'
 COLUMNS_PUBLISH = {
-    "attribute_name_in_msg_1": "attribute_name_in_source_1",
-    "attribute_name_in_msg_2": "attribute_name_in_source_2",
+    "attribute_name_in_msg_1": {
+        "source_attribute": "attribute_name_in_source_1",
+        "conversion": "lowercase"
+     },
+    "attribute_name_in_msg_2": {
+        "source_attribute": "attribute_name_in_source_2",
+        "conversion": "uppercase"
+     },
     "name": "last_name"
 }
 

@@ -17,10 +17,20 @@ def gather_publish_msg(msg):
     if hasattr(config, 'COLUMNS_PUBLISH'):
         gathered_msg = {}
         for msg_key, value_key in config.COLUMNS_PUBLISH.items():
-            if value_key in msg:
+            if type(value_key) == dict and 'source_attribute' in value_key:
+                gathered_msg[msg_key] = msg[value_key['source_attribute']]
+
+                if 'conversion' in value_key:
+                    if value_key['conversion'] == 'lowercase':
+                        gathered_msg[msg_key] = gathered_msg[msg_key].lower()
+                    elif value_key['conversion'] == 'uppercase':
+                        gathered_msg[msg_key] = gathered_msg[msg_key].upper()
+                    elif value_key['conversion'] == 'capitalize':
+                        gathered_msg[msg_key] = \
+                            gathered_msg[msg_key].capitalize()
+            else:
                 gathered_msg[msg_key] = msg[value_key]
         return gathered_msg
-
     return msg
 
 
