@@ -1,0 +1,26 @@
+FULL_LOAD = False
+SOURCE = ""
+TOPIC_SETTINGS = {
+    "topic_project_id": "",
+    "topic_name": ""
+}
+TOPIC_BATCH_SETTINGS = {
+    "max_messages": 100
+}
+
+database = {
+    "db_user": "",
+    "db_name": "",
+    "instance_id": "",
+    "project_id": "",
+    "region": "",
+    "enc_password": "",
+    "kms_project": "",
+    "kms_keyring": "",
+    "kms_region": "",
+    "kms_key": ""
+}
+
+ImportMeasureValues = ""
+ImportKeys = ""
+Subscriptions = ""
