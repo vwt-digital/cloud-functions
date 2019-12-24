@@ -49,14 +49,14 @@ def publish_json(msg_data, rowcount, rowmax, topic_project_id, topic_name, subje
         }
     else:
         msg = msg_data
-    logging.info(f'Publish to {topic_path}: {msg}')
-    # future = publisher.publish(
-    #     topic_path, bytes(json.dumps(msg).encode('utf-8')))
-    # future.add_done_callback(
-    #     lambda x: logging.info(
-    #         'Published msg with ID {} ({}/{} rows).'.format(
-    #             future.result(), rowcount, rowmax))
-    # )
+    # logging.info(f'Publish to {topic_path}: {msg}')
+    future = publisher.publish(
+        topic_path, bytes(json.dumps(msg).encode('utf-8')))
+    future.add_done_callback(
+        lambda x: logging.info(
+            'Published msg with ID {} ({}/{} rows).'.format(
+                future.result(), rowcount, rowmax))
+    )
 
 
 def load_odata(xml_data):
