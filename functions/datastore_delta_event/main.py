@@ -7,6 +7,7 @@ import pandas as pd
 from google.cloud import storage, pubsub
 from google.cloud import datastore
 from google.cloud import pubsub_v1
+from xml.etree import ElementTree
 
 DATASTORE_CHUNK_SIZE = 300
 
@@ -20,7 +21,7 @@ def gather_publish_msg(msg):
     if hasattr(config, 'COLUMNS_PUBLISH'):
         gathered_msg = {}
         for msg_key, value_key in config.COLUMNS_PUBLISH.items():
-            if type(value_key) == dict and 'source_attribute' in value_key:
+            if type(value_key) == dict and 'source_attribute' in value_key and value_key['source_attribute'] in msg:
                 gathered_msg[msg_key] = msg[value_key['source_attribute']]
 
                 if 'conversion' in value_key:
@@ -31,44 +32,77 @@ def gather_publish_msg(msg):
                     elif value_key['conversion'] == 'capitalize':
                         gathered_msg[msg_key] = \
                             gathered_msg[msg_key].capitalize()
-            else:
+            elif value_key in msg:
                 gathered_msg[msg_key] = msg[value_key]
         return gathered_msg
     return msg
 
 
-def publish_json(msg, rowcount, rowmax, topic_project_id, topic_name):
+def publish_json(msg_data, rowcount, rowmax, topic_project_id, topic_name, subject=None):
     topic_path = publisher.topic_path(topic_project_id, topic_name)
-    # logging.info(f'Publish to {topic_path}: {msg}')
-    future = publisher.publish(
-        topic_path, bytes(json.dumps(msg).encode('utf-8')))
-    future.add_done_callback(
-        lambda x: logging.info(
-            'Published msg with ID {} ({}/{} rows).'.format(
-                future.result(), rowcount, rowmax))
-    )
+    if subject:
+        msg = {
+            "gobits": [
+                {}
+            ],
+            subject: msg_data
+        }
+    else:
+        msg = msg_data
+    logging.info(f'Publish to {topic_path}: {msg}')
+    # future = publisher.publish(
+    #     topic_path, bytes(json.dumps(msg).encode('utf-8')))
+    # future.add_done_callback(
+    #     lambda x: logging.info(
+    #         'Published msg with ID {} ({}/{} rows).'.format(
+    #             future.result(), rowcount, rowmax))
+    # )
 
 
-def df_from_store(bucket_name, blob_name, from_archive=False):
+def load_odata(xml_data):
+    xml_tree = ElementTree.XML(xml_data)
+    if not xml_tree.tag.endswith('}feed'):
+        logging.warning('Root XML element is expected to be "feed"')
+        return pd.DataFrame()
+    namespace = xml_tree.tag[:-4]
+    entries_list = []
+    for entry in xml_tree.findall(f'{namespace}entry'):
+        content = entry.find(f'{namespace}content')
+        if content:
+            entry_dict = {}
+            for properties in content:
+                if properties.tag.endswith('}properties'):
+                    for prop in properties:
+                        if prop.text:
+                            entry_dict[prop.tag.split('}')[-1]] = prop.text
+                    logging.info(f"Properties {entry_dict}")
+                    entries_list.append(entry_dict)
+    return entries_list
+
+
+def data_from_store(bucket_name, blob_name, from_archive=False):
     path = 'gs://{}/{}'.format(bucket_name, blob_name)
     logging.info('Reading {}'.format(path))
     if blob_name.endswith('.xlsx'):
         if from_archive:
-            df = pd.read_excel(path, dtype=str)
+            new_data = pd.read_excel(path, dtype=str).to_dict(orient='records')
         else:
             converter = {i: str for i in range(len(config.COLUMNS_NONPII))}
-            df = pd.read_excel(path, converters=converter)
-    if blob_name.endswith('.csv'):
-        df = pd.read_csv(path, **config.CSV_DIALECT_PARAMETERS)
-    if blob_name.endswith('.json'):
+            new_data = pd.read_excel(path, converters=converter).to_dict(orient='records')
+    elif blob_name.endswith('.csv'):
+        new_data = pd.read_csv(path, **config.CSV_DIALECT_PARAMETERS).to_dict(orient='records')
+    elif blob_name.endswith('.atom'):
+        bucket = storage.Client().get_bucket(bucket_name)
+        return load_odata(bucket.get_blob(blob_name).download_as_string())
+    elif blob_name.endswith('.json'):
         if hasattr(config, 'ATTRIBUTE_WITH_THE_LIST'):
             bucket = storage.Client().get_bucket(bucket_name)
             json_data = json.loads(bucket.get_blob(blob_name).download_as_string())
-            df = pd.DataFrame(json_data[config.ATTRIBUTE_WITH_THE_LIST])
+            new_data = json_data[config.ATTRIBUTE_WITH_THE_LIST]
         else:
-            df = pd.read_json(path, dtype=False)
+            new_data = pd.read_json(path, dtype=False).to_dict(orient='records')
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
-    return df
+    return new_data
 
 
 def df_to_store(bucket_name, blob_name, df):
@@ -139,12 +173,12 @@ def get_prev_blob(bucket_name, prefix_filter):
         return None
 
 
-def calculate_diff_from_datastore(df_new, state_storage_specification):
+def calculate_diff_from_datastore(new_data, state_storage_specification):
     ds_client = datastore.Client()
     rows_result = []
-    for df_chunk in [df_new[i:i+DATASTORE_CHUNK_SIZE] for i in range(0, len(df_new), DATASTORE_CHUNK_SIZE)]:
+    for new_chunk in [new_data[i:i+DATASTORE_CHUNK_SIZE] for i in range(0, len(new_data), DATASTORE_CHUNK_SIZE)]:
         new_state_items = {}
-        for item in df_chunk.to_dict(orient='records'):
+        for item in new_chunk:
             item_to_publish = gather_publish_msg(item)
             new_state_items[item_to_publish[state_storage_specification['id_property']]] = item_to_publish
         keys = [ds_client.key(state_storage_specification['entity_name'], key) for key in new_state_items.keys()]
@@ -192,11 +226,11 @@ def publish_diff(data, context):
     if not prefix_filter or filename.startswith(prefix_filter):
         try:
             # Read dataframe from store
-            df_new = df_from_store(bucket, filename)
+            new_data = data_from_store(bucket, filename)
             state_storage_specification = config.STATE_STORAGE_SPECIFICATION
 
             if state_storage_specification['type'] == 'datastore':
-                rows_json = calculate_diff_from_datastore(df_new, state_storage_specification)
+                rows_json = calculate_diff_from_datastore(new_data, state_storage_specification)
             else:
                 raise ValueError(f"Unknown state_storage type {state_storage_specification['type']}")
 
@@ -246,4 +280,4 @@ def publish_diff(data, context):
 
 # main defined for testing
 if __name__ == '__main__':
-    publish_diff({'bucket': config.INBOX, 'name': 'testfile.json'}, {'event_id': 0, 'event_type': 'none'})
+    publish_diff({'bucket': config.INBOX, 'name': 'testfile.atom'}, {'event_id': 0, 'event_type': 'none'})
