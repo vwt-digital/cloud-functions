@@ -53,7 +53,7 @@ def publish_json(msg_data, rowcount, rowmax, topic_project_id, topic_name, subje
     future = publisher.publish(
         topic_path, bytes(json.dumps(msg).encode('utf-8')))
     future.add_done_callback(
-        lambda x: logging.info(
+        lambda x: logging.debug(
             'Published msg with ID {} ({}/{} rows).'.format(
                 future.result(), rowcount, rowmax))
     )
@@ -75,7 +75,6 @@ def load_odata(xml_data):
                     for prop in properties:
                         if prop.text:
                             entry_dict[prop.tag.split('}')[-1]] = prop.text
-                    logging.info(f"Properties {entry_dict}")
                     entries_list.append(entry_dict)
     return entries_list
 
@@ -182,7 +181,6 @@ def calculate_diff_from_datastore(new_data, state_storage_specification):
             item_to_publish = gather_publish_msg(item)
             new_state_items[item_to_publish[state_storage_specification['id_property']]] = item_to_publish
         keys = [ds_client.key(state_storage_specification['entity_name'], key) for key in new_state_items.keys()]
-        # logging.debug(f'keys to query {keys}')
         missing_items = []
         current_state_chunk = ds_client.get_multi(keys, missing=missing_items)
         for current_item in current_state_chunk:
@@ -195,7 +193,6 @@ def calculate_diff_from_datastore(new_data, state_storage_specification):
                 elif key_value != current_item[key_name]:
                     is_equal = False
                     break
-            # logging.debug(f'Comparing {current_item} to {new_item} compares {is_equal}')
             if not is_equal:
                 rows_result.append(new_item)
         rows_result.extend([new_state_items[missing_item.key.id_or_name] for missing_item in missing_items])
