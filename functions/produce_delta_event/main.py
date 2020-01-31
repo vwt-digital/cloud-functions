@@ -3,6 +3,7 @@ import os
 import io
 import json
 import config
+import datetime
 import pandas as pd
 from google.cloud import storage, pubsub
 from google.cloud import pubsub_v1
@@ -21,13 +22,24 @@ def gather_publish_msg(msg):
                 gathered_msg[msg_key] = msg[value_key['source_attribute']]
 
                 if 'conversion' in value_key:
-                    if value_key['conversion'] == 'lowercase':
-                        gathered_msg[msg_key] = gathered_msg[msg_key].lower()
-                    elif value_key['conversion'] == 'uppercase':
-                        gathered_msg[msg_key] = gathered_msg[msg_key].upper()
-                    elif value_key['conversion'] == 'capitalize':
-                        gathered_msg[msg_key] = \
-                            gathered_msg[msg_key].capitalize()
+                    try:
+                        if value_key['conversion'] == 'lowercase':
+                            gathered_msg[msg_key] = gathered_msg[
+                                msg_key].lower()
+                        elif value_key['conversion'] == 'uppercase':
+                            gathered_msg[msg_key] = gathered_msg[
+                                msg_key].upper()
+                        elif value_key['conversion'] == 'capitalize':
+                            gathered_msg[msg_key] = \
+                                gathered_msg[msg_key].capitalize()
+                        elif value_key['conversion'] == 'jsondate':
+                            gathered_msg[msg_key] = \
+                                datetime.datetime.strptime(
+                                    gathered_msg[msg_key], value_key.get(
+                                        'format', '%Y-%m-%dT%H:%M:%SZ'))
+                    except ValueError as error:
+                        logging.exception(error)
+                        gathered_msg[msg_key] = None
             else:
                 gathered_msg[msg_key] = msg[value_key]
         return gathered_msg
