@@ -18,30 +18,32 @@ def gather_publish_msg(msg):
     if hasattr(config, 'COLUMNS_PUBLISH'):
         gathered_msg = {}
         for msg_key, value_key in config.COLUMNS_PUBLISH.items():
-            if type(value_key) == dict and 'source_attribute' in value_key:
+            if type(value_key) is dict and \
+                    'source_attribute' in value_key and \
+                    value_key['source_attribute'] in msg and \
+                    msg[value_key['source_attribute']] is not None:
                 gathered_msg[msg_key] = msg[value_key['source_attribute']]
 
                 if 'conversion' in value_key:
-                    try:
-                        if value_key['conversion'] == 'lowercase':
-                            gathered_msg[msg_key] = gathered_msg[
-                                msg_key].lower()
-                        elif value_key['conversion'] == 'uppercase':
-                            gathered_msg[msg_key] = gathered_msg[
-                                msg_key].upper()
-                        elif value_key['conversion'] == 'capitalize':
-                            gathered_msg[msg_key] = \
-                                gathered_msg[msg_key].capitalize()
-                        elif value_key['conversion'] == 'jsondate':
-                            gathered_msg[msg_key] = \
-                                datetime.datetime.strptime(
-                                    gathered_msg[msg_key], value_key.get(
-                                        'format', '%Y-%m-%dT%H:%M:%SZ'))
-                    except ValueError as error:
-                        logging.exception(error)
-                        gathered_msg[msg_key] = None
-            else:
+                    if value_key['conversion'] == 'lowercase':
+                        gathered_msg[msg_key] = gathered_msg[
+                            msg_key].lower()
+                    elif value_key['conversion'] == 'uppercase':
+                        gathered_msg[msg_key] = gathered_msg[
+                            msg_key].upper()
+                    elif value_key['conversion'] == 'capitalize':
+                        gathered_msg[msg_key] = \
+                            gathered_msg[msg_key].capitalize()
+                    elif value_key['conversion'] == 'jsondate':
+                        gathered_msg[msg_key] = \
+                            datetime.datetime.strptime(
+                                gathered_msg[msg_key], value_key.get(
+                                    'format', '%Y-%m-%dT%H:%M:%SZ'))
+            elif type(value_key) is not dict and value_key in msg and \
+                    msg[value_key] is not None:
                 gathered_msg[msg_key] = msg[value_key]
+            else:
+                gathered_msg[msg_key] = ''
         return gathered_msg
     return msg
 
