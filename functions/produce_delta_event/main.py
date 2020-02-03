@@ -3,8 +3,8 @@ import os
 import io
 import json
 import config
-import datetime
 import pandas as pd
+from datetime import datetime
 from google.cloud import storage, pubsub
 from google.cloud import pubsub_v1
 
@@ -34,11 +34,13 @@ def gather_publish_msg(msg):
                     elif value_key['conversion'] == 'capitalize':
                         gathered_msg[msg_key] = \
                             gathered_msg[msg_key].capitalize()
-                    elif value_key['conversion'] == 'jsondate':
-                        gathered_msg[msg_key] = str(
-                            datetime.datetime.strptime(
+                    elif value_key['conversion'] == 'datetime':
+                        date_object = datetime.strptime(
                                 gathered_msg[msg_key], value_key.get(
-                                    'format', '%Y-%m-%dT%H:%M:%SZ')))
+                                    'format_from', '%Y-%m-%dT%H:%M:%SZ'))
+                        gathered_msg[msg_key] = str(
+                            datetime.strftime(date_object, value_key.get(
+                                'format_to', '%Y-%m-%dT%H:%M:%SZ')))
             elif type(value_key) is not dict and value_key in msg and \
                     msg[value_key] is not None:
                 gathered_msg[msg_key] = msg[value_key]
