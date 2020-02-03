@@ -43,7 +43,7 @@ def gather_publish_msg(msg):
                     msg[value_key] is not None:
                 gathered_msg[msg_key] = msg[value_key]
             else:
-                gathered_msg[msg_key] = ''
+                gathered_msg[msg_key] = None
         return gathered_msg
     return msg
 
