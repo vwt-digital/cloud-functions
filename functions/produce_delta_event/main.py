@@ -35,10 +35,10 @@ def gather_publish_msg(msg):
                         gathered_msg[msg_key] = \
                             gathered_msg[msg_key].capitalize()
                     elif value_key['conversion'] == 'jsondate':
-                        gathered_msg[msg_key] = \
+                        gathered_msg[msg_key] = str(
                             datetime.datetime.strptime(
                                 gathered_msg[msg_key], value_key.get(
-                                    'format', '%Y-%m-%dT%H:%M:%SZ'))
+                                    'format', '%Y-%m-%dT%H:%M:%SZ')))
             elif type(value_key) is not dict and value_key in msg and \
                     msg[value_key] is not None:
                 gathered_msg[msg_key] = msg[value_key]
