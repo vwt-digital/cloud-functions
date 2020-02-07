@@ -47,7 +47,8 @@ COLUMNS_DROP = [
 # When using a dictionary {[name]: {'source_attribute': [field], 'conversion': [conversion]}}, the
 # key 'source_attribute' will be the object from where the field will be fetched. An optional
 # key 'conversion' can be filled with one of the following to convert the
-# fetched value: 'lowercase', 'uppercase' or 'capitalize'
+# fetched value: 'lowercase', 'uppercase', 'capitalize' or 'datetime'. The 'datetime' format requires
+# two extra fields, 'format_from' and 'format_to', to support conversion.
 COLUMNS_PUBLISH = {
     "attribute_name_in_msg_1": {
         "source_attribute": "attribute_name_in_source_1",
@@ -56,6 +57,12 @@ COLUMNS_PUBLISH = {
     "attribute_name_in_msg_2": {
         "source_attribute": "attribute_name_in_source_2",
         "conversion": "uppercase"
+     },
+     "attribute_name_in_msg_3": {
+        "source_attribute": "attribute_name_in_source_3",
+        "conversion": "datetime",
+        "format_from": "%Y-%m-%dT%H:%M:%SZ",
+        "format_to": "%Y-%m-%dT%H:%M:%SZ"
      },
     "name": "last_name"
 }

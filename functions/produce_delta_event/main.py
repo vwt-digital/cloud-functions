@@ -4,6 +4,7 @@ import io
 import json
 import config
 import pandas as pd
+from datetime import datetime
 from google.cloud import storage, pubsub
 from google.cloud import pubsub_v1
 
@@ -17,19 +18,34 @@ def gather_publish_msg(msg):
     if hasattr(config, 'COLUMNS_PUBLISH'):
         gathered_msg = {}
         for msg_key, value_key in config.COLUMNS_PUBLISH.items():
-            if type(value_key) == dict and 'source_attribute' in value_key:
+            if type(value_key) is dict and \
+                    'source_attribute' in value_key and \
+                    value_key['source_attribute'] in msg and \
+                    msg[value_key['source_attribute']] is not None:
                 gathered_msg[msg_key] = msg[value_key['source_attribute']]
 
                 if 'conversion' in value_key:
                     if value_key['conversion'] == 'lowercase':
-                        gathered_msg[msg_key] = gathered_msg[msg_key].lower()
+                        gathered_msg[msg_key] = gathered_msg[
+                            msg_key].lower()
                     elif value_key['conversion'] == 'uppercase':
-                        gathered_msg[msg_key] = gathered_msg[msg_key].upper()
+                        gathered_msg[msg_key] = gathered_msg[
+                            msg_key].upper()
                     elif value_key['conversion'] == 'capitalize':
                         gathered_msg[msg_key] = \
                             gathered_msg[msg_key].capitalize()
-            else:
+                    elif value_key['conversion'] == 'datetime':
+                        date_object = datetime.strptime(
+                                gathered_msg[msg_key], value_key.get(
+                                    'format_from', '%Y-%m-%dT%H:%M:%SZ'))
+                        gathered_msg[msg_key] = str(
+                            datetime.strftime(date_object, value_key.get(
+                                'format_to', '%Y-%m-%dT%H:%M:%SZ')))
+            elif type(value_key) is not dict and value_key in msg and \
+                    msg[value_key] is not None:
                 gathered_msg[msg_key] = msg[value_key]
+            else:
+                gathered_msg[msg_key] = None
         return gathered_msg
     return msg
 
@@ -49,7 +65,7 @@ def publish_json(msg, rowcount, rowmax, topic_project_id, topic_name):
 def calculate_diff(df_old, df_new):
     if len(df_old.columns) != len(df_new.columns):
         logging.info('Different columns found')
-        if len(set(df_new.columns) - set(config.COLUMNS_NONPII)) > 0:
+        if hasattr(config, 'COLUMNS_NONPII') and len(set(df_new.columns) - set(config.COLUMNS_NONPII)) > 0:
             logging.warning('Not correct columns found in new file')
             raise ValueError('Not correct columns found in new file')
         return df_new
