@@ -4,50 +4,15 @@ import io
 import json
 import config
 import pandas as pd
-from datetime import datetime
 from google.cloud import storage, pubsub
 from google.cloud import pubsub_v1
+from gathermsg import gather_publish_msg
+
 
 logging.basicConfig(level=logging.INFO)
 
 batch_settings = pubsub_v1.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
 publisher = pubsub.PublisherClient(batch_settings)
-
-
-def gather_publish_msg(msg):
-    if hasattr(config, 'COLUMNS_PUBLISH'):
-        gathered_msg = {}
-        for msg_key, value_key in config.COLUMNS_PUBLISH.items():
-            if type(value_key) is dict and \
-                    'source_attribute' in value_key and \
-                    value_key['source_attribute'] in msg and \
-                    msg[value_key['source_attribute']] is not None:
-                gathered_msg[msg_key] = msg[value_key['source_attribute']]
-
-                if 'conversion' in value_key:
-                    if value_key['conversion'] == 'lowercase':
-                        gathered_msg[msg_key] = gathered_msg[
-                            msg_key].lower()
-                    elif value_key['conversion'] == 'uppercase':
-                        gathered_msg[msg_key] = gathered_msg[
-                            msg_key].upper()
-                    elif value_key['conversion'] == 'capitalize':
-                        gathered_msg[msg_key] = \
-                            gathered_msg[msg_key].capitalize()
-                    elif value_key['conversion'] == 'datetime':
-                        date_object = datetime.strptime(
-                                gathered_msg[msg_key], value_key.get(
-                                    'format_from', '%Y-%m-%dT%H:%M:%SZ'))
-                        gathered_msg[msg_key] = str(
-                            datetime.strftime(date_object, value_key.get(
-                                'format_to', '%Y-%m-%dT%H:%M:%SZ')))
-            elif type(value_key) is not dict and value_key in msg and \
-                    msg[value_key] is not None:
-                gathered_msg[msg_key] = msg[value_key]
-            else:
-                gathered_msg[msg_key] = None
-        return gathered_msg
-    return msg
 
 
 def publish_json(msg, rowcount, rowmax, topic_project_id, topic_name):
@@ -182,6 +147,7 @@ def publish_diff(data, context):
     df_new = None
 
     prefix_filter = config.FILEPATH_PREFIX_FILTER if hasattr(config, 'FILEPATH_PREFIX_FILTER') else None
+    columns_publish = config.COLUMNS_PUBLISH if hasattr(config, 'COLUMNS_PUBLISH') else None
 
     if not prefix_filter or filename.startswith(prefix_filter):
         try:
@@ -212,7 +178,8 @@ def publish_diff(data, context):
                 # Publish individual rows to topic
                 i = 1
                 for row in rows_json:
-                    publish_json(gather_publish_msg(row), rowcount=i, rowmax=len(rows_json), **config.TOPIC_SETTINGS)
+                    publish_json(gather_publish_msg(row, columns_publish), rowcount=i, rowmax=len(rows_json),
+                                 **config.TOPIC_SETTINGS)
                     i += 1
 
             if config.INBOX != config.ARCHIVE:
