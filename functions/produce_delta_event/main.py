@@ -15,11 +15,19 @@ batch_settings = pubsub_v1.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
 publisher = pubsub.PublisherClient(batch_settings)
 
 
-def publish_json(msg, rowcount, rowmax, topic_project_id, topic_name):
+def publish_json(innermsg, rowcount, rowmax, topic_project_id, topic_name, subject=None):
     topic_path = publisher.topic_path(topic_project_id, topic_name)
-    # logging.info(f'Publish to {topic_path}: {msg}')
+    if subject:
+        sendmsg = {
+            "gobits": [{}],
+            subject: innermsg
+        }
+    else:
+        sendmsg = innermsg
+
+    # logging.info(f'Publish to {topic_path}: {sendmsg}')
     future = publisher.publish(
-        topic_path, bytes(json.dumps(msg).encode('utf-8')))
+        topic_path, bytes(json.dumps(sendmsg).encode('utf-8')))
     future.add_done_callback(
         lambda x: logging.info(
             'Published msg with ID {} ({}/{} rows).'.format(
@@ -148,6 +156,7 @@ def publish_diff(data, context):
 
     prefix_filter = config.FILEPATH_PREFIX_FILTER if hasattr(config, 'FILEPATH_PREFIX_FILTER') else None
     columns_publish = config.COLUMNS_PUBLISH if hasattr(config, 'COLUMNS_PUBLISH') else None
+    batch_message_size = config.BATCH_MESSAGE_SIZE if hasattr(config, 'BATCH_MESSAGE_SIZE') else None
 
     if not prefix_filter or filename.startswith(prefix_filter):
         try:
@@ -177,10 +186,24 @@ def publish_diff(data, context):
 
                 # Publish individual rows to topic
                 i = 1
+                message_batch = []
                 for row in rows_json:
-                    publish_json(gather_publish_msg(row, columns_publish), rowcount=i, rowmax=len(rows_json),
-                                 **config.TOPIC_SETTINGS)
+                    msg_to_publish = gather_publish_msg(row, columns_publish)
+                    if not batch_message_size:
+                        publish_json(msg_to_publish, rowcount=i, rowmax=len(rows_json),
+                                     **config.TOPIC_SETTINGS)
+                    else:
+                        message_batch.append(msg_to_publish)
+                        if len(message_batch) == batch_message_size:
+                            publish_json(message_batch, rowcount=i, rowmax=len(rows_json),
+                                         **config.TOPIC_SETTINGS)
+                            message_batch = []
+
                     i += 1
+
+                if message_batch:
+                    publish_json(message_batch, rowcount=i, rowmax=len(rows_json),
+                                 **config.TOPIC_SETTINGS)
 
             if config.INBOX != config.ARCHIVE:
                 # Write file to archive
