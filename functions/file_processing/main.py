@@ -1,6 +1,5 @@
 import json
 import config
-import datetime
 import logging
 import traceback
 import io
@@ -88,8 +87,8 @@ def df_from_store(bucket_name, blob_name):
     elif blob_name.endswith('.json'):
         try:
             df = pd.read_json(path, dtype=False)
-        except Exception as e:
-            logging.warning('Could not load valid json, trying to normalize')
+        except Exception:
+            logging.info('Could not load valid json, trying to normalize')
             bucket = client.get_bucket(bucket_name)
             blob = storage.Blob(blob_name, bucket)
             content = blob.download_as_string()
@@ -123,6 +122,6 @@ def file_processing(data, context):
         remove_file_from_filestore(bucket_name, filename)
 
         logging.info('Processing file {} successful'.format(filename))
-    except Exception as e:
+    except Exception:
         logging.error('Processing file {} failed!'.format(filename))
         traceback.print_exc()
