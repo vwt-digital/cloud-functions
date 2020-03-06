@@ -4,10 +4,14 @@ import io
 import json
 import config
 import pandas as pd
+
 from google.cloud import storage, pubsub
 from google.cloud import datastore
 from google.cloud import pubsub_v1
+
 from xml.etree import ElementTree
+
+from gathermsg import gather_publish_msg
 
 DATASTORE_CHUNK_SIZE = 300
 
@@ -15,27 +19,6 @@ logging.basicConfig(level=logging.INFO)
 
 batch_settings = pubsub_v1.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
 publisher = pubsub.PublisherClient(batch_settings)
-
-
-def gather_publish_msg(msg):
-    if hasattr(config, 'COLUMNS_PUBLISH'):
-        gathered_msg = {}
-        for msg_key, value_key in config.COLUMNS_PUBLISH.items():
-            if type(value_key) == dict and 'source_attribute' in value_key and value_key['source_attribute'] in msg:
-                gathered_msg[msg_key] = msg[value_key['source_attribute']]
-
-                if 'conversion' in value_key:
-                    if value_key['conversion'] == 'lowercase':
-                        gathered_msg[msg_key] = gathered_msg[msg_key].lower()
-                    elif value_key['conversion'] == 'uppercase':
-                        gathered_msg[msg_key] = gathered_msg[msg_key].upper()
-                    elif value_key['conversion'] == 'capitalize':
-                        gathered_msg[msg_key] = \
-                            gathered_msg[msg_key].capitalize()
-            elif value_key in msg:
-                gathered_msg[msg_key] = msg[value_key]
-        return gathered_msg
-    return msg
 
 
 def publish_json(msg_data, rowcount, rowmax, topic_project_id, topic_name, subject=None):
@@ -174,11 +157,12 @@ def get_prev_blob(bucket_name, prefix_filter):
 
 def calculate_diff_from_datastore(new_data, state_storage_specification):
     ds_client = datastore.Client()
+    columns_publish = config.COLUMNS_PUBLISH if hasattr(config, 'COLUMNS_PUBLISH') else None
     rows_result = []
     for new_chunk in [new_data[i:i+DATASTORE_CHUNK_SIZE] for i in range(0, len(new_data), DATASTORE_CHUNK_SIZE)]:
         new_state_items = {}
         for item in new_chunk:
-            item_to_publish = gather_publish_msg(item)
+            item_to_publish = gather_publish_msg(item, columns_publish)
             new_state_items[item_to_publish[state_storage_specification['id_property']]] = item_to_publish
         keys = [ds_client.key(state_storage_specification['entity_name'], key) for key in new_state_items.keys()]
         missing_items = []
