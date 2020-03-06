@@ -9,7 +9,7 @@ from google.cloud import storage, pubsub
 from google.cloud import datastore
 from google.cloud import pubsub_v1
 
-from xml.etree import ElementTree
+from defusedxml import ElementTree
 
 from gathermsg import gather_publish_msg
 
