@@ -203,6 +203,7 @@ def publish_diff(data, context):
     df_new = None
 
     prefix_filter = config.FILEPATH_PREFIX_FILTER if hasattr(config, 'FILEPATH_PREFIX_FILTER') else None
+    batch_message_size = config.BATCH_MESSAGE_SIZE if hasattr(config, 'BATCH_MESSAGE_SIZE') else None
 
     if not prefix_filter or filename.startswith(prefix_filter):
         try:
@@ -225,8 +226,17 @@ def publish_diff(data, context):
                 # Publish individual rows to topic
                 i = 1
                 datastore_new_state = {}
+                message_batch = []
                 for publish_message in rows_json:
-                    publish_json(publish_message, rowcount=i, rowmax=len(rows_json), **config.TOPIC_SETTINGS)
+                    if not batch_message_size:
+                        publish_json(publish_message, rowcount=i, rowmax=len(rows_json), **config.TOPIC_SETTINGS)
+                    else:
+                        message_batch.append(publish_message)
+                        if len(message_batch) == batch_message_size:
+                            publish_json(message_batch, rowcount=i, rowmax=len(rows_json),
+                                         **config.TOPIC_SETTINGS)
+                            message_batch = []
+
                     i += 1
 
                     if state_storage_specification['type'] == 'datastore':
@@ -235,6 +245,9 @@ def publish_diff(data, context):
                             store_to_datastore(datastore_new_state, state_storage_specification)
                             datastore_new_state = {}
 
+                if message_batch:
+                    publish_json(message_batch, rowcount=i, rowmax=len(rows_json),
+                                 **config.TOPIC_SETTINGS)
                 if state_storage_specification['type'] == 'datastore' and datastore_new_state:
                     store_to_datastore(datastore_new_state, state_storage_specification)
 

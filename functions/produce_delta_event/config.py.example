@@ -15,6 +15,9 @@ CSV_DIALECT_PARAMETERS = {
     'quotechar': '"'
 }
 
+# Number of entries to send in a single message
+BATCH_MESSAGE_SIZE = 100
+
 # Storage buckets to use
 # INBOX will be used to load input
 # ARCHIVE will be used to store all handled input, input on INBOX will be removed when stored to ARCHIVE
