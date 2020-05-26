@@ -1,5 +1,7 @@
 # Config for file_processing
-TOPIC_NAME = 'my-topic'
+TOPIC_SETTINGS = {
+    'topic_name': 'my-topic-name'
+}
 MEDIA_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 INBOX = 'my-bucket'
 
