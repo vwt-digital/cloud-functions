@@ -39,14 +39,6 @@ STATE_STORAGE_SPECIFICATION = {
     'id_property': 'identifying_property'
 }
 
-# List of columns without personal data
-COLUMNS_NONPII = [
-]
-
-# List of columns to drop (for instance containing reporting date)
-COLUMNS_DROP = [
-]
-
 # Specification of attributes in published message. Key value will be key value
 # in the published message, value in COLUMNS_PUBLISH will be attribute in source from which
 # value of the respective field will be retrieved when using it as a string {[name]: [field]}.
