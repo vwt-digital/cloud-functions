@@ -16,6 +16,8 @@ from gathermsg import gather_publish_msg
 DATASTORE_CHUNK_SIZE = 300
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 batch_settings = pubsub_v1.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
 publisher = pubsub.PublisherClient(batch_settings)
