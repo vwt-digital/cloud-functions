@@ -199,7 +199,7 @@ def publish_diff(data, context):
 
     bucket = data['bucket']
     filename = data['name']
-    df_new = None
+    new_data = None
 
     prefix_filter = config.FILEPATH_PREFIX_FILTER if hasattr(config, 'FILEPATH_PREFIX_FILTER') else None
     batch_message_size = config.BATCH_MESSAGE_SIZE if hasattr(config, 'BATCH_MESSAGE_SIZE') else None
@@ -252,7 +252,7 @@ def publish_diff(data, context):
 
             if config.INBOX != config.ARCHIVE:
                 # Write file to archive
-                df_to_store(config.ARCHIVE, filename, df_new)
+                df_to_store(config.ARCHIVE, filename, new_data)
                 # Remove file from inbox
                 remove_from_store(config.INBOX, filename)
 
@@ -260,7 +260,7 @@ def publish_diff(data, context):
 
         except Exception as e:
             if hasattr(config, 'ERROR'):
-                df_to_store(config.ERROR, filename, df_new)
+                df_to_store(config.ERROR, filename, new_data)
             if config.INBOX != config.ARCHIVE:
                 remove_from_store(config.INBOX, filename)
             logging.error('Processing failure {}'.format(e))
