@@ -69,8 +69,7 @@ def data_from_store(bucket_name, blob_name, from_archive=False):
         if from_archive:
             new_data = pd.read_excel(path, dtype=str).to_dict(orient='records')
         else:
-            converter = {i: str for i in range(len(config.COLUMNS_NONPII))}
-            new_data = pd.read_excel(path, converters=converter).to_dict(orient='records')
+            new_data = pd.read_excel(path, dtype=str).to_dict(orient='records')
     elif blob_name.endswith('.csv'):
         new_data = pd.read_csv(path, **config.CSV_DIALECT_PARAMETERS).to_dict(orient='records')
     elif blob_name.endswith('.atom'):
