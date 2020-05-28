@@ -68,7 +68,6 @@ def data_from_store(bucket_name, blob_name, from_archive=False):
     if blob_name.endswith('.xlsx'):
         if from_archive:
             new_data = pd.read_excel(path, dtype=str).to_dict(orient='records')
-            print('new_data received')
         else:
             new_data = pd.read_excel(path, dtype=str).to_dict(orient='records')
     elif blob_name.endswith('.csv'):
@@ -83,7 +82,6 @@ def data_from_store(bucket_name, blob_name, from_archive=False):
             new_data = json_data[config.ATTRIBUTE_WITH_THE_LIST]
         else:
             new_data = pd.read_json(path, dtype=False).to_dict(orient='records')
-    print('Read file .....')
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
     return new_data
 
@@ -94,6 +92,7 @@ def df_to_store(bucket_name, blob_name, df):
         new_blob = blob_name
         strIO = io.BytesIO()
         excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
+        df = pd.DataFrame(df)
         df.to_excel(excel_writer, sheet_name="data", index=False)
         excel_writer.save()
         file = strIO.getvalue()
@@ -210,12 +209,10 @@ def publish_diff(data, context):
         try:
             # Read dataframe from store
             new_data = data_from_store(bucket, filename)
-            print('test1')
             state_storage_specification = config.STATE_STORAGE_SPECIFICATION
 
             if state_storage_specification['type'] == 'datastore':
                 rows_json = calculate_diff_from_datastore(new_data, state_storage_specification)
-                print('type of the json is {}'.format(type(rows_json)))
             else:
                 raise ValueError(f"Unknown state_storage type {state_storage_specification['type']}")
 
@@ -223,10 +220,8 @@ def publish_diff(data, context):
             # In case of no new records: don't send any updates
             if len(rows_json) == 0:
                 logging.info('No new rows found')
-                print('nothing new found')
             else:
                 logging.info('Found {} new rows.'.format(len(rows_json)))
-                print('some new lines found')
                 # Publish individual rows to topic
                 i = 1
                 datastore_new_state = {}
@@ -258,16 +253,13 @@ def publish_diff(data, context):
             if config.INBOX != config.ARCHIVE:
                 # Write file to archive
                 df_to_store(config.ARCHIVE, filename, new_data)
-                print('write file to archive')
                 # Remove file from inbox
                 remove_from_store(config.INBOX, filename)
-                print('reomve file from archive')
             logging.info('Run succeeded')
 
         except Exception as e:
             if hasattr(config, 'ERROR'):
                 df_to_store(config.ERROR, filename, new_data)
-                print('exception has occured')
             if config.INBOX != config.ARCHIVE:
                 remove_from_store(config.INBOX, filename)
             logging.error('Processing failure {}'.format(e))
