@@ -4,6 +4,7 @@ import io
 import json
 import config
 import pandas as pd
+import numpy as np
 
 from google.cloud import storage, pubsub
 from google.cloud import datastore
@@ -66,10 +67,7 @@ def data_from_store(bucket_name, blob_name, from_archive=False):
     path = 'gs://{}/{}'.format(bucket_name, blob_name)
     logging.info('Reading {}'.format(path))
     if blob_name.endswith('.xlsx'):
-        if from_archive:
-            new_data = pd.read_excel(path, dtype=str).to_dict(orient='records')
-        else:
-            new_data = pd.read_excel(path, dtype=str).to_dict(orient='records')
+        new_data = pd.read_excel(path, dtype=str).replace(np.nan, None).to_dict(orient='records')
     elif blob_name.endswith('.csv'):
         new_data = pd.read_csv(path, **config.CSV_DIALECT_PARAMETERS).to_dict(orient='records')
     elif blob_name.endswith('.atom'):
