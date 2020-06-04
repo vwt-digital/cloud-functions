@@ -23,3 +23,10 @@ COLUMNS_NONPII = [
 # to be deleted automatically after rention period is passed
 # If delete is True, original file is deleted after the function is finished
 DELETE = False
+
+# JSON_ELEMENTS is used when reading data from JSON where the top-level is an object instead
+# of a list. The list containing the data to load is the value of an attribute of the top-level object.
+# For example, setting JSON_ELEMENTS to rows, will load this JSON: {"rows": [{"field1": "value1"}] }
+# If the JSON data top-level object is a list (like [{"field1": "value1"}]), then JSON_ELEMENTS should
+# not be declared.
+JSON_ELEMENTS = ['rows']
