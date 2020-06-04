@@ -119,7 +119,9 @@ def file_processing(data, context):
         )
 
         send_bytestream_to_filestore(preprocessed['file'], new_filename, config.INBOX)
-        remove_file_from_filestore(bucket_name, filename)
+        delete = config.DELETE if hasattr(config, 'DELETE') else True
+        if delete:
+            remove_file_from_filestore(bucket_name, filename)
 
         logging.info('Processing file {} successful'.format(filename))
     except Exception:

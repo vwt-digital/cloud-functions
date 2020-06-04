@@ -2,7 +2,9 @@
 TOPIC_SETTINGS = {
     'topic_name': 'my-topic-name'
 }
+
 MEDIA_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
 INBOX = 'my-bucket'
 
 # Mapping column names
@@ -16,3 +18,8 @@ COLUMNS_NONPII = [
     'column_one',
     'column_two'
 ]
+
+# Original incomming file to be deleted from bucket by function when finished or 
+# to be deleted automatically after rention period is passed
+# If delete is True, original file is deleted after the function is finished
+DELETE = False
