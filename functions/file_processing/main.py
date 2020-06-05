@@ -81,7 +81,7 @@ def preprocessing(bucket_name, blob_name):
         excel_writer.save()
     else:
         df = df.to_json()
-        df = json.dumps(df).encode.encode('utf-8')
+        df = json.dumps(df).encode('utf-8')
         if hasattr(config, 'JSON_ELEMENTS'):
             bytesIO = {config.JSON_ELEMENTS[-1]: df}
         else:
