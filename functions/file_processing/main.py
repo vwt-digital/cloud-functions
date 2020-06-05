@@ -80,7 +80,12 @@ def preprocessing(bucket_name, blob_name):
         df.to_excel(excel_writer, sheet_name="data", index=False)
         excel_writer.save()
     else:
-        bytesIO = df.to_json()
+        df = df.to_json()
+        df = json.dumps(df).encode.encode('utf-8')
+        if hasattr(config, 'JSON_ELEMENTS'):
+            bytesIO = {config.JSON_ELEMENTS[-1]: df}
+        else:
+            bytesIO = df
 
     return dict(
         status='success',
