@@ -84,7 +84,7 @@ def preprocessing(bucket_name, blob_name):
 
     return dict(
         status='success',
-        message='excel-file succesfully processed',
+        message='file succesfully processed',
         file=bytesIO
     )
 
