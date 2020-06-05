@@ -33,6 +33,8 @@ def gather_publish_msg(msg, columns_publish=None):
                             gathered_msg[msg_key] = gathered_msg[msg_key].upper()
                         elif value_key['conversion'] == 'capitalize':
                             gathered_msg[msg_key] = gathered_msg[msg_key].capitalize()
+                        elif value_key['conversion'] == 'integer':
+                            gathered_msg[msg_key] = int(gathered_msg[msg_key])
                         elif value_key['conversion'] == 'datetime':
                             if isinstance(gathered_msg[msg_key], int):
                                 # the datetime was converted by Pandas to Unix epoch in milliseconds
