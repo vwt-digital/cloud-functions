@@ -73,8 +73,9 @@ def preprocessing(bucket_name, blob_name):
     # Only keep non-PII columns
     df = df[config.COLUMNS_NONPII]
 
-    # replace empty string with nan
-    df.replace('', None, inplace=True)
+    # replace '' with none values
+    for col in df.columns:
+        df.at[df[col] == '', col] = None
 
     # Return file as byte-stream
     if blob_name.endswith('.xlsx'):
