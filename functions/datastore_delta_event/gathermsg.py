@@ -33,7 +33,7 @@ def gather_publish_msg(msg, columns_publish=None):
                             gathered_msg[msg_key] = gathered_msg[msg_key].upper()
                         elif value_key['conversion'] == 'capitalize':
                             gathered_msg[msg_key] = gathered_msg[msg_key].capitalize()
-                        elif value_key['conversion'] == 'integer':
+                        elif value_key['conversion'] == 'numeric':
                             value = gathered_msg[msg_key]
                             if isint(value):
                                 gathered_msg[msg_key] = int(float(value))
