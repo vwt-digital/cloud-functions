@@ -6,6 +6,7 @@ import io
 import time
 import pandas as pd
 from google.cloud import storage
+import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 client = storage.Client()
@@ -73,6 +74,9 @@ def preprocessing(bucket_name, blob_name):
     # Only keep non-PII columns
     df = df[config.COLUMNS_NONPII]
 
+    # replace empty string with nan
+    df.replace('', np.nan, inplace=True)
+
     # Return file as byte-stream
     if blob_name.endswith('.xlsx'):
         bytesIO = io.BytesIO()
@@ -110,7 +114,7 @@ def df_from_store(bucket_name, blob_name):
                 data = data[el]
             df = pd.DataFrame.from_records(data)
         else:
-            df = pd.read_json(path, dtype=False).to_dict(orient='records')
+            df = pd.read_json(path, dtype=False)
     else:
         raise ValueError('File is not json or xlsx: {}'.format(blob_name))
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
