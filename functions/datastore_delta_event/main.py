@@ -102,12 +102,10 @@ def df_to_store(bucket_name, blob_name, df):
         content_type = 'text/csv'
     else:
         new_blob = os.path.splitext(blob_name)[0] + '.json'
-        blob_str = df.to_json()
-        blob_json = json.loads(blob_str)
         if hasattr(config, 'ATTRIBUTE_WITH_THE_LIST'):
-            blob_data = {config.ATTRIBUTE_WITH_THE_LIST: blob_json}
+            blob_data = {config.ATTRIBUTE_WITH_THE_LIST: df}
         else:
-            blob_data = blob_json
+            blob_data = df
         file = json.dumps(blob_data).encode('utf-8')
         content_type = 'application/json'
 
