@@ -6,7 +6,6 @@ import io
 import time
 import pandas as pd
 from google.cloud import storage
-import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 client = storage.Client()
@@ -75,7 +74,7 @@ def preprocessing(bucket_name, blob_name):
     df = df[config.COLUMNS_NONPII]
 
     # replace empty string with nan
-    df.replace('', np.nan, inplace=True)
+    df.replace('', None, inplace=True)
 
     # Return file as byte-stream
     if blob_name.endswith('.xlsx'):
