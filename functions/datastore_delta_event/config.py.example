@@ -39,30 +39,35 @@ STATE_STORAGE_SPECIFICATION = {
     'id_property': 'identifying_property'
 }
 
-# List of columns without personal data
-COLUMNS_NONPII = [
-]
-
-# List of columns to drop (for instance containing reporting date)
-COLUMNS_DROP = [
-]
-
-# Specification of attributes in published message. Key value will be key value
-# in the published message, value in COLUMNS_PUBLISH will be attribute in source from which
-# value of the respective field will be retrieved when using it as a string {[name]: [field]}.
-# When using a dictionary {[name]: {'source_attribute': [field], 'conversion': [conversion]}}, the
-# key 'source_attribute' will be the object from where the field will be fetched. An optional
-# key 'conversion' can be filled with one of the following to convert the
-# fetched value: 'lowercase', 'uppercase' or 'capitalize'
+# Specification of attributes in published message. Key value will be key value in the published message,
+# value in COLUMNS_PUBLISH will be attribute in source from which value of the respective field will be retrieved when
+# using it as a string {[name]: [field]}. When using a dictionary
+# {[name]: {'source_attribute': [field], 'conversion': [conversion]}}, the key 'source_attribute' will be the object
+# from where the field will be fetched (can be a list to match first attribute). An optional key 'conversion' can be
+# filled with one of the following to convert the fetched value: 'lowercase', 'uppercase', 'capitalize', 'numeric',
+# 'datetime' or 'geojson_point'. The 'datetime' format requires two extra fields, 'format_from' and 'format_to',
+# to support conversion. The 'geojson_point' conversion requires longitude_attribute and latitude_attribute to be
+# defined as extra fields. A GeoJSON Point body will be the value of the respective message attribute.
 COLUMNS_PUBLISH = {
     "attribute_name_in_msg_1": {
         "source_attribute": "attribute_name_in_source_1",
         "conversion": "lowercase"
      },
     "attribute_name_in_msg_2": {
-        "source_attribute": "attribute_name_in_source_2",
+        "source_attribute": ["attribute_name_in_source_2_1", "attribute_name_in_source_2_2"],
         "conversion": "uppercase"
      },
+     "attribute_name_in_msg_3": {
+        "source_attribute": "attribute_name_in_source_3",
+        "conversion": "datetime",
+        "format_from": "%Y-%m-%dT%H:%M:%SZ",
+        "format_to": "%Y-%m-%dT%H:%M:%SZ"
+     },
+     "attribute_geometry": {
+        "conversion": "geojson_point",
+        "longitude_attribute": "longitude",
+        "latitude_attribute": "latitude"
+     }
     "name": "last_name"
 }
 

@@ -66,11 +66,9 @@ def data_from_store(bucket_name, blob_name, from_archive=False):
     path = 'gs://{}/{}'.format(bucket_name, blob_name)
     logging.info('Reading {}'.format(path))
     if blob_name.endswith('.xlsx'):
-        if from_archive:
-            new_data = pd.read_excel(path, dtype=str).to_dict(orient='records')
-        else:
-            converter = {i: str for i in range(len(config.COLUMNS_NONPII))}
-            new_data = pd.read_excel(path, converters=converter).to_dict(orient='records')
+        new_data = pd.read_excel(path, dtype=str)
+        new_data[new_data.isnull()] = None
+        new_data = new_data.to_dict(orient='records')
     elif blob_name.endswith('.csv'):
         new_data = pd.read_csv(path, **config.CSV_DIALECT_PARAMETERS).to_dict(orient='records')
     elif blob_name.endswith('.atom'):
@@ -93,6 +91,7 @@ def df_to_store(bucket_name, blob_name, df):
         new_blob = blob_name
         strIO = io.BytesIO()
         excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
+        df = pd.DataFrame(df)
         df.to_excel(excel_writer, sheet_name="data", index=False)
         excel_writer.save()
         file = strIO.getvalue()
@@ -103,12 +102,10 @@ def df_to_store(bucket_name, blob_name, df):
         content_type = 'text/csv'
     else:
         new_blob = os.path.splitext(blob_name)[0] + '.json'
-        blob_str = df.to_json()
-        blob_json = json.loads(blob_str)
         if hasattr(config, 'ATTRIBUTE_WITH_THE_LIST'):
-            blob_data = {config.ATTRIBUTE_WITH_THE_LIST: blob_json}
+            blob_data = {config.ATTRIBUTE_WITH_THE_LIST: df}
         else:
-            blob_data = blob_json
+            blob_data = df
         file = json.dumps(blob_data).encode('utf-8')
         content_type = 'application/json'
 
@@ -200,7 +197,7 @@ def publish_diff(data, context):
 
     bucket = data['bucket']
     filename = data['name']
-    df_new = None
+    new_data = None
 
     prefix_filter = config.FILEPATH_PREFIX_FILTER if hasattr(config, 'FILEPATH_PREFIX_FILTER') else None
     batch_message_size = config.BATCH_MESSAGE_SIZE if hasattr(config, 'BATCH_MESSAGE_SIZE') else None
@@ -222,7 +219,6 @@ def publish_diff(data, context):
                 logging.info('No new rows found')
             else:
                 logging.info('Found {} new rows.'.format(len(rows_json)))
-
                 # Publish individual rows to topic
                 i = 1
                 datastore_new_state = {}
@@ -253,15 +249,14 @@ def publish_diff(data, context):
 
             if config.INBOX != config.ARCHIVE:
                 # Write file to archive
-                df_to_store(config.ARCHIVE, filename, df_new)
+                df_to_store(config.ARCHIVE, filename, new_data)
                 # Remove file from inbox
                 remove_from_store(config.INBOX, filename)
-
             logging.info('Run succeeded')
 
         except Exception as e:
             if hasattr(config, 'ERROR'):
-                df_to_store(config.ERROR, filename, df_new)
+                df_to_store(config.ERROR, filename, new_data)
             if config.INBOX != config.ARCHIVE:
                 remove_from_store(config.INBOX, filename)
             logging.error('Processing failure {}'.format(e))

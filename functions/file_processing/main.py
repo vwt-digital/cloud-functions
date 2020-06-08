@@ -14,10 +14,16 @@ client = storage.Client()
 def send_bytestream_to_filestore(bytesIO, filename, bucket_name):
     bucket = client.get_bucket(bucket_name)
     blob = storage.Blob(filename, bucket)
-    blob.upload_from_string(
-        bytesIO.getvalue(),
-        content_type=config.MEDIA_TYPE
-    )
+    if filename.endswith('.xlsx'):
+        blob.upload_from_string(
+            bytesIO.getvalue(),
+            content_type=config.MEDIA_TYPE
+        )
+    else:
+        blob.upload_from_string(
+            bytesIO,
+            content_type=config.MEDIA_TYPE
+        )
     logging.info('Write file {} to {}'.format(filename, bucket_name))
 
 
@@ -67,15 +73,27 @@ def preprocessing(bucket_name, blob_name):
     # Only keep non-PII columns
     df = df[config.COLUMNS_NONPII]
 
-    # Return Excel file as byte-stream
-    bytesIO = io.BytesIO()
-    excel_writer = pd.ExcelWriter(bytesIO, engine="xlsxwriter")
-    df.to_excel(excel_writer, sheet_name="data", index=False)
-    excel_writer.save()
+    # replace empty string with nan
+    df.replace('', None, inplace=True)
+
+    # Return file as byte-stream
+    if blob_name.endswith('.xlsx'):
+        bytesIO = io.BytesIO()
+        excel_writer = pd.ExcelWriter(bytesIO, engine="xlsxwriter")
+        df.to_excel(excel_writer, sheet_name="data", index=False)
+        excel_writer.save()
+    else:
+        if hasattr(config, 'JSON_ELEMENTS'):
+            df = df.to_dict(orient='records')
+            bytesIO = {config.JSON_ELEMENTS[-1]: df}
+            bytesIO = json.dumps(bytesIO).encode('utf-8')
+        else:
+            df = df.to_json()
+            bytesIO = json.dumps(df).encode('utf-8')
 
     return dict(
         status='success',
-        message='excel-file succesfully processed',
+        message='file succesfully processed',
         file=bytesIO
     )
 
@@ -85,19 +103,17 @@ def df_from_store(bucket_name, blob_name):
     if blob_name.endswith('.xlsx'):
         df = pd.read_excel(path, dtype=str)
     elif blob_name.endswith('.json'):
-        try:
-            df = pd.read_json(path, dtype=False)
-        except Exception:
-            logging.info('Could not load valid json, trying to normalize')
-            bucket = client.get_bucket(bucket_name)
+        if hasattr(config, 'JSON_ELEMENTS'):
+            json_elements = getattr(config, 'JSON_ELEMENTS', [])
+            bucket = storage.Client().get_bucket(bucket_name)
             blob = storage.Blob(blob_name, bucket)
             content = blob.download_as_string()
             data = json.loads(content.decode('utf-8'))
-            json_elements = getattr(config, 'JSON_ELEMENTS', [])
             for el in json_elements:
                 data = data[el]
             df = pd.DataFrame.from_records(data)
-            logging.info('Succesfully normalized json data')
+        else:
+            df = pd.read_json(path, dtype=False)
     else:
         raise ValueError('File is not json or xlsx: {}'.format(blob_name))
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
@@ -113,13 +129,21 @@ def file_processing(data, context):
         # Read dataframe from store
         preprocessed = preprocessing(bucket_name, filename)
 
-        new_filename = '{}_{}_upload.xlsx'.format(
-            str(int(time.time())),
-            config.TOPIC_SETTINGS['topic_name'],
-        )
+        if filename.endswith('.xlsx'):
+            new_filename = '{}_{}_upload.xlsx'.format(
+                str(int(time.time())),
+                config.TOPIC_SETTINGS['topic_name'],
+            )
+        else:
+            new_filename = '{}_{}_upload.json'.format(
+                str(int(time.time())),
+                config.TOPIC_SETTINGS['topic_name'],
+            )
 
         send_bytestream_to_filestore(preprocessed['file'], new_filename, config.INBOX)
-        remove_file_from_filestore(bucket_name, filename)
+        delete = config.DELETE if hasattr(config, 'DELETE') else True
+        if delete:
+            remove_file_from_filestore(bucket_name, filename)
 
         logging.info('Processing file {} successful'.format(filename))
     except Exception:
