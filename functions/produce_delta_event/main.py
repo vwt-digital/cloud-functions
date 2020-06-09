@@ -45,11 +45,9 @@ def calculate_diff(df_old, df_new):
 
     columns_drop = getattr(config, 'COLUMNS_DROP', [])
     joined = df_old.\
-        drop_duplicates().\
         drop(columns_drop, axis=1).\
         merge(
             df_new.
-            drop_duplicates().
             drop(columns_drop, axis=1),
             how='right',
             indicator=True)
@@ -152,26 +150,41 @@ def publish_diff(data, context):
 
     bucket = data['bucket']
     filename = data['name']
-    df_new = None
 
     prefix_filter = config.FILEPATH_PREFIX_FILTER if hasattr(config, 'FILEPATH_PREFIX_FILTER') else None
     columns_publish = config.COLUMNS_PUBLISH if hasattr(config, 'COLUMNS_PUBLISH') else None
     batch_message_size = config.BATCH_MESSAGE_SIZE if hasattr(config, 'BATCH_MESSAGE_SIZE') else None
 
     if not prefix_filter or filename.startswith(prefix_filter):
+
+        df_orig = None
+
         try:
             # Read dataframe from store
-            df_new = df_from_store(bucket, filename)
-            # Get previous data from archive
-            blob_prev = get_prev_blob(config.ARCHIVE, prefix_filter)
+            df_orig = df_from_store(bucket, filename)
             full_load = config.FULL_LOAD if hasattr(config, 'FULL_LOAD') else False
+            should_drop_duplicates = config.SHOULD_DROP_DUPLICATES \
+                if hasattr(config, 'SHOULD_DROP_DUPLICATES') else True
+
+            if should_drop_duplicates:
+                df_new = df_orig.copy().drop_duplicates()
+            else:
+                df_new = df_orig
 
             # Read previous data from archive and compare
-            if blob_prev and (not full_load):
-                df_prev = df_from_store(config.ARCHIVE, blob_prev, from_archive=True)
-                df_diff = calculate_diff(df_prev, df_new)
-            else:
-                df_diff = df_new.copy().drop_duplicates()
+            if not full_load:
+                # Get previous data from archive
+                blob_prev = get_prev_blob(config.ARCHIVE, prefix_filter)
+                if blob_prev:
+                    df_prev = df_from_store(config.ARCHIVE, blob_prev, from_archive=True)
+                    if should_drop_duplicates:
+                        df_prev.drop_duplicates()
+                    df_diff = calculate_diff(df_prev, df_new)
+                else:
+                    full_load = True
+
+            if full_load:
+                df_diff = df_new
 
             # Check the number of new records
             # In case of no new records: don't send any updates
@@ -207,7 +220,7 @@ def publish_diff(data, context):
 
             if config.INBOX != config.ARCHIVE:
                 # Write file to archive
-                df_to_store(config.ARCHIVE, filename, df_new)
+                df_to_store(config.ARCHIVE, filename, df_orig)
                 # Remove file from inbox
                 remove_from_store(config.INBOX, filename)
 
@@ -215,7 +228,7 @@ def publish_diff(data, context):
 
         except Exception as e:
             if hasattr(config, 'ERROR'):
-                df_to_store(config.ERROR, filename, df_new)
+                df_to_store(config.ERROR, filename, df_orig)
             if config.INBOX != config.ARCHIVE:
                 remove_from_store(config.INBOX, filename)
             logging.error('Processing failure {}'.format(e))
