@@ -31,6 +31,9 @@ ERROR = 'my-error-bucket'
 # Optional, if True then all items will be published, regardless changes to previous data
 FULL_LOAD = False
 
+# Optional, if False then no duplicate items are deleted.
+SHOULD_DROP_DUPLICATES = True
+
 # Dict that contains mapping from column names to the used column names
 COLUMN_MAPPING = {
     'Example A': 'example_A',
