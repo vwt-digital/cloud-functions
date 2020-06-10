@@ -4,6 +4,7 @@ import logging
 import traceback
 import io
 import time
+import hashlib
 import pandas as pd
 from google.cloud import storage
 
@@ -72,6 +73,12 @@ def preprocessing(bucket_name, blob_name):
 
     # Only keep non-PII columns
     df = df[config.COLUMNS_NONPII]
+
+    # Columns to be hashed
+    if hasattr(config, 'COLUMNS_HASH'):
+        for col in config.COLUMNS_HASH:
+            for row in range(len(df)):
+                df.loc[row, col] = hashlib.md5(df.loc[row, col].encode()).hexdigest()
 
     # replace '' with none values
     for col in df.columns:
