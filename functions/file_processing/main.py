@@ -42,16 +42,11 @@ def preprocessing(bucket_name, blob_name):
     # Check if contains the correct columns
     cols_exp = set(list(config.COLUMN_MAPPING.keys()))
     cols_present = set(list(df))
-    if cols_exp != cols_present:
-        # Create error message
-        to_many = cols_present - cols_exp
+
+    if cols_exp.difference(cols_present) is not None:
         missing = cols_exp - cols_present
-        message = 'The uploaded file does not contain the correct columns.'
-        if len(to_many) != 0:
-            message = message + ' The following columns are abundant: "{}".'.format(
-                '", "'.join(list(to_many)))
-        if len(missing) != 0:
-            message = message + ' The following columns are missing: "{}".'.format(
+        message = 'The uploaded file does not contain the correct columns.' + \
+            ' The following columns are missing: "{}".'.format(
                 '", "'.join(list(missing)))
 
         logging.info(message)
