@@ -43,7 +43,7 @@ def preprocessing(bucket_name, blob_name):
     cols_exp = set(list(config.COLUMN_MAPPING.keys()))
     cols_present = set(list(df))
 
-    if cols_exp.difference(cols_present) is not None:
+    if cols_exp.difference(cols_present):
         missing = cols_exp - cols_present
         message = 'The uploaded file does not contain the correct columns.' + \
             ' The following columns are missing: "{}".'.format(
