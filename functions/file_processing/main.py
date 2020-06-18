@@ -80,6 +80,10 @@ def preprocessing(bucket_name, blob_name):
             for row in range(len(df)):
                 df.loc[row, col] = hashlib.md5(df.loc[row, col].encode()).hexdigest()
 
+    # replace '' with none values
+    for col in df.columns:
+        df.at[df[col] == '', col] = None
+
     # Return file as byte-stream
     if blob_name.endswith('.xlsx'):
         bytesIO = io.BytesIO()
