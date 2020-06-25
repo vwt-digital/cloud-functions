@@ -37,3 +37,11 @@ DELETE = False
 # If the JSON data top-level object is a list (like [{"field1": "value1"}]), then JSON_ELEMENTS should
 # not be declared.
 JSON_ELEMENTS = ['rows']
+
+# If a column contains a string you partly want to remove, use REMOVE_CHAR_FROM_COLUMN. The key is 
+# the column under attention and the value is the number of characters you want to cut of. For example
+{'title': 10} will remove the last 10 characters for every string of the column 'title'. If no characters need
+to be removed, the REMOVE_CHAR_FROM_COLUMN should not be declared
+REMOVE_CHAR_FROM_COLUMN = {
+    'column_name1': 10
+}
