@@ -82,7 +82,7 @@ def preprocessing(bucket_name, blob_name):
     # remove characters from certain columns
     if hasattr(config, 'REMOVE_CHAR_FROM_COLUMN'):
         for key, value in config.REMOVE_CHAR_FROM_COLUMN.items():
-            df[key] = df[col].str[0:-value]
+            df[key] = df[key].str[0:-value]
 
     # Return file as byte-stream
     if blob_name.endswith('.xlsx'):
