@@ -73,7 +73,7 @@ def preprocessing(bucket_name, blob_name):
     if hasattr(config, 'COLUMNS_HASH'):
         for col in config.COLUMNS_HASH:
             for row in range(len(df)):
-                df.loc[row, col] = hashlib.md5(df.loc[row, col].encode()).hexdigest()
+                df.loc[row, col] = hashlib.sha256(df.loc[row, col].encode()).hexdigest()
 
     # replace '' with none values
     for col in df.columns:
