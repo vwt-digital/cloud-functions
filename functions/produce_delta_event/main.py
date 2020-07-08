@@ -17,12 +17,12 @@ batch_settings = pubsub_v1.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
 publisher = pubsub.PublisherClient(batch_settings)
 
 
-def publish_json(bits, innermsg, rowcount, rowmax, topic_project_id, topic_name, subject=None):
+def publish_json(gobits, innermsg, rowcount, rowmax, topic_project_id, topic_name, subject=None):
     topic_path = publisher.topic_path(topic_project_id, topic_name)
 
     if subject:
         sendmsg = {
-            "gobits": bits.to_json(),
+            "gobits": [gobits.to_json()],
             subject: innermsg
         }
     else:
@@ -203,24 +203,24 @@ def publish_diff(data, context):
                 # Publish individual rows to topic
                 i = 1
                 message_batch = []
-                bits = Gobits(context=context)
+                gobits = Gobits.from_context(context=context)
 
                 for row in rows_json:
                     msg_to_publish = gather_publish_msg(row, columns_publish)
                     if not batch_message_size:
-                        publish_json(bits, msg_to_publish, rowcount=i, rowmax=len(rows_json),
+                        publish_json(gobits, msg_to_publish, rowcount=i, rowmax=len(rows_json),
                                      **config.TOPIC_SETTINGS)
                     else:
                         message_batch.append(msg_to_publish)
                         if len(message_batch) == batch_message_size:
-                            publish_json(bits, message_batch, rowcount=i, rowmax=len(rows_json),
+                            publish_json(gobits, message_batch, rowcount=i, rowmax=len(rows_json),
                                          **config.TOPIC_SETTINGS)
                             message_batch = []
 
                     i += 1
 
                 if message_batch:
-                    publish_json(bits, message_batch, rowcount=i, rowmax=len(rows_json),
+                    publish_json(gobits, message_batch, rowcount=i, rowmax=len(rows_json),
                                  **config.TOPIC_SETTINGS)
 
             if config.INBOX != config.ARCHIVE:

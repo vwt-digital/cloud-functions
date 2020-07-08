@@ -22,11 +22,11 @@ batch_settings = pubsub_v1.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
 publisher = pubsub.PublisherClient(batch_settings)
 
 
-def publish_json(bits, msg_data, rowcount, rowmax, topic_project_id, topic_name, subject=None):
+def publish_json(gobits, msg_data, rowcount, rowmax, topic_project_id, topic_name, subject=None):
     topic_path = publisher.topic_path(topic_project_id, topic_name)
     if subject:
         msg = {
-            "gobits": bits.to_json(),
+            "gobits": [gobits.to_json()],
             subject: msg_data
         }
     else:
@@ -222,15 +222,15 @@ def publish_diff(data, context):
                 i = 1
                 datastore_new_state = {}
                 message_batch = []
-                bits = Gobits(context=context)
+                gobits = Gobits.from_context(context=context)
 
                 for publish_message in rows_json:
                     if not batch_message_size:
-                        publish_json(bits, publish_message, rowcount=i, rowmax=len(rows_json), **config.TOPIC_SETTINGS)
+                        publish_json(gobits, publish_message, rowcount=i, rowmax=len(rows_json), **config.TOPIC_SETTINGS)
                     else:
                         message_batch.append(publish_message)
                         if len(message_batch) == batch_message_size:
-                            publish_json(bits, message_batch, rowcount=i, rowmax=len(rows_json),
+                            publish_json(gobits, message_batch, rowcount=i, rowmax=len(rows_json),
                                          **config.TOPIC_SETTINGS)
                             message_batch = []
 
@@ -243,7 +243,7 @@ def publish_diff(data, context):
                             datastore_new_state = {}
 
                 if message_batch:
-                    publish_json(bits, message_batch, rowcount=i, rowmax=len(rows_json),
+                    publish_json(gobits, message_batch, rowcount=i, rowmax=len(rows_json),
                                  **config.TOPIC_SETTINGS)
                 if state_storage_specification['type'] == 'datastore' and datastore_new_state:
                     store_to_datastore(datastore_new_state, state_storage_specification)
