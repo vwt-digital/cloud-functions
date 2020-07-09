@@ -73,11 +73,16 @@ def preprocessing(bucket_name, blob_name):
     if hasattr(config, 'COLUMNS_HASH'):
         for col in config.COLUMNS_HASH:
             for row in range(len(df)):
-                df.loc[row, col] = hashlib.md5(df.loc[row, col].encode()).hexdigest()
+                df.loc[row, col] = hashlib.sha256(df.loc[row, col].encode()).hexdigest()
 
     # replace '' with none values
     for col in df.columns:
         df.at[df[col] == '', col] = None
+
+    # remove characters from certain columns
+    if hasattr(config, 'REMOVE_CHAR_FROM_COLUMN'):
+        for key, value in config.REMOVE_CHAR_FROM_COLUMN.items():
+            df[key] = df[key].str[0:-value]
 
     # Return file as byte-stream
     if blob_name.endswith('.xlsx'):
