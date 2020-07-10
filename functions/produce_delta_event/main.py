@@ -39,7 +39,7 @@ def publish_json(gobits, innermsg, rowcount, rowmax, topic_project_id, topic_nam
 
 
 def calculate_diff(df_old, df_new):
-    if len(df_old.columns) != len(df_new.columns):
+    if len(df_old.columns) != len(df_new.columns) or df_old.empty:
         logging.info('Different columns found')
         if hasattr(config, 'COLUMNS_NONPII') and len(set(df_new.columns) - set(config.COLUMNS_NONPII)) > 0:
             logging.warning('Not correct columns found in new file')
