@@ -3,7 +3,6 @@ import config
 import logging
 import traceback
 import io
-import time
 import hashlib
 import pandas as pd
 from google.cloud import storage
@@ -137,18 +136,7 @@ def file_processing(data, context):
         # Read dataframe from store
         preprocessed = preprocessing(bucket_name, filename)
 
-        if filename.endswith('.xlsx'):
-            new_filename = '{}_{}_upload.xlsx'.format(
-                str(int(time.time())),
-                config.TOPIC_SETTINGS['topic_name'],
-            )
-        else:
-            new_filename = '{}_{}_upload.json'.format(
-                str(int(time.time())),
-                config.TOPIC_SETTINGS['topic_name'],
-            )
-
-        send_bytestream_to_filestore(preprocessed['file'], new_filename, config.INBOX)
+        send_bytestream_to_filestore(preprocessed['file'], filename, config.INBOX)
         delete = config.DELETE if hasattr(config, 'DELETE') else True
         if delete:
             remove_file_from_filestore(bucket_name, filename)
