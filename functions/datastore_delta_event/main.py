@@ -211,6 +211,7 @@ def publish_diff(data, context):
                 full_load = config.FULL_LOAD if hasattr(config, 'FULL_LOAD') else False
                 if full_load:
                     rows_json = new_data
+                    logging.info('publish Full Load')
                 else:
                     rows_json = calculate_diff_from_datastore(new_data, state_storage_specification)
             else:
