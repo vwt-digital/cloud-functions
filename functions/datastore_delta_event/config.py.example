@@ -82,3 +82,7 @@ ATTRIBUTE_WITH_THE_LIST = 'rows'
 # starts with the specified prefix. For example, when setting FILEPATH_PREFIX_FILTER to source/mydatadir, only
 # files in the source/mydatadir will be handled.
 FILEPATH_PREFIX_FILTER = 'source/mydatadir'
+
+# When FULL_LOAD is defined, the publish_diff function will publish and update all records. FULL_LOAD can be True or False.
+# If FULL_LOAD is not defined, the default is False
+FULL_LOAD = True

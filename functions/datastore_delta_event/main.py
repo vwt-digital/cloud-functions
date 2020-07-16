@@ -208,7 +208,11 @@ def publish_diff(data, context):
             state_storage_specification = config.STATE_STORAGE_SPECIFICATION
 
             if state_storage_specification['type'] == 'datastore':
-                rows_json = calculate_diff_from_datastore(new_data, state_storage_specification)
+                full_load = config.FULL_LOAD if hasattr(config, 'FULL_LOAD') else False
+                if full_load:
+                    rows_json = new_data
+                else:
+                    rows_json = calculate_diff_from_datastore(new_data, state_storage_specification)
             else:
                 raise ValueError(f"Unknown state_storage type {state_storage_specification['type']}")
 
