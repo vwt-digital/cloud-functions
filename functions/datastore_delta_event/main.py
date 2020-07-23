@@ -152,6 +152,7 @@ def get_prev_blob(bucket_name, prefix_filter):
 
 
 def calculate_diff_from_datastore(new_data, state_storage_specification):
+    full_load = config.FULL_LOAD if hasattr(config, 'FULL_LOAD') else False
     ds_client = datastore.Client()
     columns_publish = config.COLUMNS_PUBLISH if hasattr(config, 'COLUMNS_PUBLISH') else None
     rows_result = []
@@ -165,16 +166,19 @@ def calculate_diff_from_datastore(new_data, state_storage_specification):
         current_state_chunk = ds_client.get_multi(keys, missing=missing_items)
         for current_item in current_state_chunk:
             new_item = new_state_items[current_item.key.id_or_name]
-            is_equal = True
-            for key_name, key_value in new_item.items():
-                if key_name not in current_item:
-                    is_equal = False
-                    break
-                elif key_value != current_item[key_name]:
-                    is_equal = False
-                    break
-            if not is_equal:
+            if full_load:
                 rows_result.append(new_item)
+            else:
+                is_equal = True
+                for key_name, key_value in new_item.items():
+                    if key_name not in current_item:
+                        is_equal = False
+                        break
+                    elif key_value != current_item[key_name]:
+                        is_equal = False
+                        break
+                if not is_equal:
+                    rows_result.append(new_item)
         rows_result.extend([new_state_items[missing_item.key.id_or_name] for missing_item in missing_items])
     return rows_result
 
@@ -206,9 +210,12 @@ def publish_diff(data, context):
             # Read dataframe from store
             new_data = data_from_store(bucket, filename)
             state_storage_specification = config.STATE_STORAGE_SPECIFICATION
+            full_load = config.FULL_LOAD if hasattr(config, 'FULL_LOAD') else False
 
             if state_storage_specification['type'] == 'datastore':
                 rows_json = calculate_diff_from_datastore(new_data, state_storage_specification)
+                if full_load:
+                    logging.info('publish Full Load')
             else:
                 raise ValueError(f"Unknown state_storage type {state_storage_specification['type']}")
 
