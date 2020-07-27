@@ -10,12 +10,9 @@ from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy import create_engine, or_
 from models import ImportMeasureValues, ImportKeys, Subscriptions
 
-db_password = utils.decrypt_secret(
+db_password = utils.get_secret(
     config.database['project_id'],
-    config.database['kms_region'],
-    config.database['kms_keyring'],
-    config.database['kms_key'],
-    config.database['enc_password']
+    config.database['secret_name']
 )
 
 sacn = 'mysql+pymysql://{}:{}@/{}?unix_socket=/cloudsql/{}:{}:{}'.format(

@@ -14,11 +14,7 @@ database = {
     "instance_id": "",
     "project_id": "",
     "region": "",
-    "enc_password": "",
-    "kms_project": "",
-    "kms_keyring": "",
-    "kms_region": "",
-    "kms_key": ""
+    "secret_name": ""
 }
 
 ImportMeasureValues = ""
