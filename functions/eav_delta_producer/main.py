@@ -4,6 +4,7 @@ import config
 import logging
 import pandas as pd
 
+from gobits import Gobits
 from google.cloud import pubsub_v1
 from datetime import datetime, timedelta
 from sqlalchemy.orm.session import sessionmaker
@@ -39,9 +40,15 @@ def handler(request):
     rows_str = df.to_json(orient='records')
     rows_json = json.loads(rows_str)
 
+    gobits = Gobits.from_request(request=request)
+
     i = 1
     for row in rows_json:
-        publish_json(row, rowcount=i, rowmax=len(rows_json), **config.TOPIC_SETTINGS)
+        msg = {
+            "gobits": [gobits.to_json()],
+            "data": [row]
+        }
+        publish_json(msg, rowcount=i, rowmax=len(rows_json), **config.TOPIC_SETTINGS)
         i += 1
 
 
@@ -118,12 +125,5 @@ def query(sourceTag, ts=None):
         })
         df.columns.name = ''
         df.set_index('sourceKey', inplace=True)
-
-        # SourceTag specific additions:
-        # to_add = config.COLS.get(sourceTag, None)
-        # if to_add is not None:
-        #     for col in to_add:
-        #         if col not in list(df):
-        #             df[col] = ''
 
     return df
