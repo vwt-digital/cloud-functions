@@ -45,3 +45,15 @@ to be removed, the REMOVE_CHAR_FROM_COLUMN should not be declared
 REMOVE_CHAR_FROM_COLUMN = {
     'column_name1': 10
 }
+
+# A list of columns to be normalized. If no columns need to be normalized, COLUMNS_NORMALIZE 
+# should not be declared
+COLUMNS_NORMALIZE = ['project']
+
+# If we need to combine certain columns (string) into a unique key, use COLUMN_COMBINE as a dictionary. The key is
+# is the new column name and the value is a list (minimum = 2) of columns to be combined. If the key already exists, this column will 
+# be overwritten by the new combined string. It is possible to define more than one key, value pairs. If no column need
+# to be combined, COLUMN_COMBINE should not be declared.
+COLUMN_COMBINE = {
+    'sleutel': ['sleutel', 'project']
+}
