@@ -5,6 +5,7 @@ import traceback
 import io
 import hashlib
 import pandas as pd
+import unicodedata
 from google.cloud import storage
 
 logging.basicConfig(level=logging.INFO)
@@ -63,25 +64,35 @@ def preprocessing(bucket_name, blob_name):
             message=message
         )
 
+    # rename the columns
     df = df.rename(columns=config.COLUMN_MAPPING)
-
-    # Only keep non-PII columns
-    df = df[config.COLUMNS_NONPII]
-
-    # Columns to be hashed
-    if hasattr(config, 'COLUMNS_HASH'):
-        for col in config.COLUMNS_HASH:
-            for row in range(len(df)):
-                df.loc[row, col] = hashlib.sha256(df.loc[row, col].encode()).hexdigest()
-
-    # replace '' with none values
-    for col in df.columns:
-        df.at[df[col] == '', col] = None
 
     # remove characters from certain columns
     if hasattr(config, 'REMOVE_CHAR_FROM_COLUMN'):
         for key, value in config.REMOVE_CHAR_FROM_COLUMN.items():
             df[key] = df[key].str[0:-value]
+
+    # normalize string columns
+    if hasattr(config, 'COLUMNS_NORMALIZE'):
+        for col in config.COLUMNS_NORMALIZE:
+            df[col] = df[col].apply(lambda x: unicodedata.normalize('NFKD', x))
+
+    # combine columns
+    if hasattr(config, 'COLUMN_COMBINE'):
+        for key, value in config.COLUMN_COMBINE.items():
+            df[key] = df[value].apply(lambda x: '_'.join(x.dropna().astype(str)), axis=1)
+
+    # Columns to be hashed
+    if hasattr(config, 'COLUMNS_HASH'):
+        for col in config.COLUMNS_HASH:
+            df[col] = df[col].apply(lambda x: hashlib.sha256(x.encode()).hexdigest())
+
+    # replace '' with none values
+    for col in df.columns:
+        df.at[df[col] == '', col] = None
+
+    # Only keep non-PII columns
+    df = df[config.COLUMNS_NONPII]
 
     # Return file as byte-stream
     if blob_name.endswith('.xlsx'):
