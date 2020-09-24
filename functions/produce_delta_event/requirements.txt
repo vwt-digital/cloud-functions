@@ -5,3 +5,4 @@ gobits==0.0.6
 Brotli==1.0.9
 xlrd==1.2.0
 XlsxWriter==1.1.8
+gcsfs==0.2.2
