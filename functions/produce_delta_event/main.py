@@ -75,11 +75,14 @@ def df_from_store(bucket_name, blob_name, from_archive=False):
         df = pd.read_csv(path, **config.CSV_DIALECT_PARAMETERS)
     if blob_name.endswith('.json'):
         if hasattr(config, 'ATTRIBUTE_WITH_THE_LIST'):
-            bucket = storage.Client().get_bucket(bucket_name)
+            client = storage.Client()
+            bucket = client.get_bucket(bucket_name)
             blob = bucket.get_blob(blob_name)
-            content = blob.download_as_string(raw_download=True)
             if blob.content_encoding == 'br':
+                content = blob.download_as_string(raw_download=True)
                 content = brotli.decompress(content)
+            else:
+                content = blob.download_as_string()
             json_data = json.loads(content)
             df = pd.DataFrame(json_data[config.ATTRIBUTE_WITH_THE_LIST])
         else:
