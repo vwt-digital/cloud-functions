@@ -7,7 +7,7 @@ import brotli
 import pandas as pd
 
 from gobits import Gobits
-from google.cloud import storage, pubsub, pubsub_v1
+from google.cloud import storage, pubsub_v1
 
 from gathermsg import gather_publish_msg
 
@@ -15,7 +15,7 @@ from gathermsg import gather_publish_msg
 logging.basicConfig(level=logging.INFO)
 
 batch_settings = pubsub_v1.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
-publisher = pubsub.PublisherClient(batch_settings)
+publisher = pubsub_v1.PublisherClient(batch_settings)
 
 
 def publish_json(gobits, innermsg, rowcount, rowmax, topic_project_id, topic_name, subject=None):
