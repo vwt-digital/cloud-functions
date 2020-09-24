@@ -3,6 +3,7 @@ import io
 import json
 import config
 import logging
+import brotli
 import pandas as pd
 
 from gobits import Gobits
@@ -75,7 +76,11 @@ def df_from_store(bucket_name, blob_name, from_archive=False):
     if blob_name.endswith('.json'):
         if hasattr(config, 'ATTRIBUTE_WITH_THE_LIST'):
             bucket = storage.Client().get_bucket(bucket_name)
-            json_data = json.loads(bucket.get_blob(blob_name).download_as_string())
+            blob = bucket.get_blob(blob_name)
+            content = blob.download_as_string(raw_download=True)
+            if blob.content_encoding == 'br':
+                content = brotli.decompress(content)
+            json_data = json.loads(content)
             df = pd.DataFrame(json_data[config.ATTRIBUTE_WITH_THE_LIST])
         else:
             df = pd.read_json(path, dtype=False)
