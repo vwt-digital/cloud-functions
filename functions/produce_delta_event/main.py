@@ -3,10 +3,11 @@ import io
 import json
 import config
 import logging
+import brotli
 import pandas as pd
 
 from gobits import Gobits
-from google.cloud import storage, pubsub, pubsub_v1
+from google.cloud import storage, pubsub_v1
 
 from gathermsg import gather_publish_msg
 
@@ -14,7 +15,7 @@ from gathermsg import gather_publish_msg
 logging.basicConfig(level=logging.INFO)
 
 batch_settings = pubsub_v1.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
-publisher = pubsub.PublisherClient(batch_settings)
+publisher = pubsub_v1.PublisherClient(batch_settings)
 
 
 def publish_json(gobits, innermsg, rowcount, rowmax, topic_project_id, topic_name, subject=None):
@@ -74,8 +75,15 @@ def df_from_store(bucket_name, blob_name, from_archive=False):
         df = pd.read_csv(path, **config.CSV_DIALECT_PARAMETERS)
     if blob_name.endswith('.json'):
         if hasattr(config, 'ATTRIBUTE_WITH_THE_LIST'):
-            bucket = storage.Client().get_bucket(bucket_name)
-            json_data = json.loads(bucket.get_blob(blob_name).download_as_string())
+            client = storage.Client()
+            bucket = client.get_bucket(bucket_name)
+            blob = bucket.get_blob(blob_name)
+            if blob.content_encoding == 'br':
+                content = blob.download_as_string(raw_download=True)
+                content = brotli.decompress(content)
+            else:
+                content = blob.download_as_string()
+            json_data = json.loads(content)
             df = pd.DataFrame(json_data[config.ATTRIBUTE_WITH_THE_LIST])
         else:
             df = pd.read_json(path, dtype=False)
