@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from hashlib import sha256
 
 
 def gather_publish_msg(msg, columns_publish=None):
@@ -48,6 +49,8 @@ def gather_publish_msg(msg, columns_publish=None):
                                     'format_from', '%Y-%m-%dT%H:%M:%SZ'))
                             gathered_msg[msg_key] = str(datetime.strftime(date_object, value_key.get(
                                 'format_to', '%Y-%m-%dT%H:%M:%SZ')))
+                        elif value_key['conversion'] == 'hash':
+                            gathered_msg[msg_key] = sha256(gathered_msg[msg_key].encode('utf-8')).hexdigest()
 
                     if 'prefix_value' in value_key:
                         gathered_msg[msg_key] = f"{value_key['prefix_value']}{gathered_msg[msg_key]}"
