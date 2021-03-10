@@ -37,15 +37,6 @@ def remove_file_from_filestore(bucket_name, filename):
 
 def preprocessing(bucket_name, blob_name):
     logging.info('Preprocess start')
-
-    if hasattr(config, 'FILEPATH_PREFIX_FILTER'):
-        if config.FILEPATH_PREFIX_FILTER not in blob_name:
-            logging.info('File not in filepath_prefix filter. Skip preprocessing')
-            return dict(
-                stutus='succes',
-                message='file is skipped'
-            )
-
     df = df_from_store(bucket_name, blob_name)
 
     # Check if contains the correct columns
