@@ -152,6 +152,14 @@ def file_processing(data, context):
     bucket_name = data['bucket']
     filename = data['name']
 
+    if hasattr(config, 'FILEPATH_PREFIX_FILTER'):
+        if config.FILEPATH_PREFIX_FILTER not in filename:
+            logging.info('File not in filepath_prefix filter. Skip preprocessing')
+            return dict(
+                stutus='succes',
+                message='file is skipped'
+            )
+
     try:
         # Read dataframe from store
         preprocessed = preprocessing(bucket_name, filename)
