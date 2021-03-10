@@ -144,7 +144,7 @@ def file_processing(data, context):
     filename = data['name']
 
     if hasattr(config, 'FILEPATH_PREFIX_FILTER'):
-        if config.FILEPATH_PREFIX_FILTER not in filename:
+        if not filename.startswith(config.FILEPATH_PREFIX_FILTER):
             logging.info('File not in filepath_prefix filter. Skip preprocessing')
             return dict(
                 stutus='succes',
