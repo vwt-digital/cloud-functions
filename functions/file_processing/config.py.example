@@ -57,3 +57,7 @@ COLUMNS_NORMALIZE = ['project']
 COLUMN_COMBINE = {
     'sleutel': ['sleutel', 'project']
 }
+
+
+# if FILEPATH_PREFIX_FILTER is configure, only the files with this prefix will be handled.
+FILEPATH_PREFIX_FILTER = 'source/path'
