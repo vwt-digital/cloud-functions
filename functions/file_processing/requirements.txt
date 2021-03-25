@@ -6,6 +6,7 @@ certifi==2020.12.5
 cffi==1.14.5
 chardet==4.0.0
 decorator==4.4.2
+et-xmlfile==1.0.1
 fsspec==0.8.7
 gcsfs==0.7.2
 google-api-core==1.26.2
@@ -21,6 +22,7 @@ importlib-metadata==3.7.3
 multidict==5.1.0
 numpy==1.20.1
 oauthlib==3.1.0
+openpyxl==3.0.7
 packaging==20.9
 pandas==1.2.3
 protobuf==3.15.6
