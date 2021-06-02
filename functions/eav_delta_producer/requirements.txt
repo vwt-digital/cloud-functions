@@ -32,6 +32,6 @@ six==1.15.0
 SQLAlchemy==1.4.2
 typing-extensions==3.7.4.3
 typing-inspect==0.6.0
-urllib3==1.26.4
+urllib3==1.26.5
 Werkzeug==1.0.1
 zipp==3.4.1
